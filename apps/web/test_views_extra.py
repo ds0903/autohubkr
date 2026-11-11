@@ -177,7 +177,8 @@ class WebEdgeTests(TestCase):
 
     def test_pages_load_motion_script_and_lists_are_marked_for_reveal(self):
         home = self.client.get(reverse("web:home")).content.decode()
-        self.assertIn("web/motion.js", home)
+        # У бойовому режимі ManifestStaticFilesStorage додає до імені хеш: web/motion.<хеш>.js.
+        self.assertRegex(home, r"web/motion(\.[0-9a-f]+)?\.js")
         self.assertIn('<li data-reveal>', home)
         self.assertIn('class="provider" data-reveal', home)
         self.assertIn('document.documentElement.classList.add("js")', home, "клас .js ставиться до першого малювання")

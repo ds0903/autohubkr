@@ -5,3 +5,5 @@ google-genai>=1.0
 aiogram>=3.13
 pillow>=10.0
 segno>=1.6
+gunicorn>=22.0
+django-jazzmin>=3.0

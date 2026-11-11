@@ -1,27 +1,62 @@
 {% extends "admin/base_site.html" %}
 {% block content %}
-<div id="content-main">
-  <h2>Ключові показники</h2>
-  <table>
-    <tr><th>Усього заявок</th><td>{{ metrics.total_orders }}</td></tr>
-    <tr><th>Підтверджених угод (головна метрика)</th><td>{{ metrics.confirmed_deals }}</td></tr>
-    <tr><th>Конверсія заявка → підтверджена робота</th><td>{{ metrics.conversion_percent }}%</td></tr>
-    <tr><th>Запитів виконавцям / відповідей</th><td>{{ metrics.offers_total }} / {{ metrics.offers_responded }}</td></tr>
-    <tr><th>Середній час відповіді виконавця</th><td>{% if metrics.avg_response_minutes is not None %}{{ metrics.avg_response_minutes }} хв{% else %}—{% endif %}</td></tr>
-  </table>
+<div class="db-wrap" id="content-main">
+  <div class="db-header">
+    <div>
+      <h1>Звіт пілота</h1>
+      <p>Як заявки доходять до підтвердженої угоди і де платформу обходять.</p>
+    </div>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card">
+      <span class="stat-icon"><i class="fas fa-clipboard-list"></i></span>
+      <span class="stat-num">{{ metrics.total_orders }}</span>
+      <span class="stat-label">Усього заявок</span>
+    </div>
+    <div class="stat-card stat-card--ok">
+      <span class="stat-icon"><i class="fas fa-handshake"></i></span>
+      <span class="stat-num">{{ metrics.confirmed_deals }}</span>
+      <span class="stat-label">Підтверджених угод (головна метрика)</span>
+    </div>
+    <div class="stat-card stat-card--signal">
+      <span class="stat-icon"><i class="fas fa-percent"></i></span>
+      <span class="stat-num">{{ metrics.conversion_percent }}%</span>
+      <span class="stat-label">Конверсія заявка → підтверджена робота</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon"><i class="fas fa-stopwatch"></i></span>
+      <span class="stat-num">{% if metrics.avg_response_minutes is not None %}{{ metrics.avg_response_minutes }} хв{% else %}—{% endif %}</span>
+      <span class="stat-label">Середній час відповіді виконавця</span>
+      <span class="stat-sub">Запитів виконавцям / відповідей: {{ metrics.offers_total }} / {{ metrics.offers_responded }}</span>
+    </div>
+  </div>
 
-  <h2>Заявки за статусами</h2>
-  <table>
-    {% for label, count in status_rows %}
-      <tr><th>{{ label }}</th><td>{{ count }}</td></tr>
-    {% empty %}<tr><td>Даних ще немає</td></tr>{% endfor %}
-  </table>
+  <div class="db-cols db-cols--even">
+    <section class="db-panel">
+      <h2 class="db-section-title">Заявки за статусами</h2>
+      <table class="db-table db-table--pairs">
+        <tbody>
+          {% for label, count in status_rows %}
+          <tr><th>{{ label }}</th><td>{{ count }}</td></tr>
+          {% empty %}
+          <tr><td colspan="2"><div class="db-empty">Даних ще немає</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
 
-  <h2>Причини спроб обходу платформи</h2>
-  <table>
-    {% for label, count in reason_rows %}
-      <tr><th>{{ label }}</th><td>{{ count }}</td></tr>
-    {% empty %}<tr><td>Випадків не зафіксовано</td></tr>{% endfor %}
-  </table>
+    <section class="db-panel">
+      <h2 class="db-section-title">Причини спроб обходу платформи</h2>
+      <table class="db-table db-table--pairs">
+        <tbody>
+          {% for label, count in reason_rows %}
+          <tr><th>{{ label }}</th><td>{{ count }}</td></tr>
+          {% empty %}
+          <tr><td colspan="2"><div class="db-empty">Випадків не зафіксовано</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
 </div>
 {% endblock %}

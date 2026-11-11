@@ -1,3 +1,4 @@
+from django import forms
 from django.conf import settings
 from django.contrib import admin
 
@@ -66,17 +67,30 @@ class ProviderAdmin(admin.ModelAdmin):
     )
     list_filter = ("city", "data_status", "categories", "is_active")
     search_fields = ("name", "address", "district", "phone")
-    filter_horizontal = ("categories", "brands")
+    autocomplete_fields = ("brands",)
     raw_id_fields = ("owner",)
     readonly_fields = ("rating", "reviews_count", "confirmed_deals_count", "avg_response_minutes")
     inlines = [ServiceInline, ProviderPhotoInline]
+    # Заголовки лишаються короткими, щоб вкладки не переносилися на другий рядок; пояснення йдуть описом.
     fieldsets = (
         ("Основне", {"fields": ("name", "city", "categories", "description", "district", "address", "working_hours")}),
-        ("Контакти (приховані від клієнта до підтвердження запису)", {"fields": ("phone", "telegram_username", "website", "owner")}),
+        ("Контакти", {
+            "description": "Приховані від клієнта до підтвердження запису.",
+            "fields": ("phone", "telegram_username", "website", "owner"),
+        }),
         ("Спеціалізація", {"fields": ("brands",)}),
-        ("Дані та просування", {"fields": ("data_status", "source_note", "promoted_until", "is_active")}),
-        ("Статистика (рахується автоматично)", {"fields": ("rating", "reviews_count", "confirmed_deals_count", "avg_response_minutes")}),
+        ("Просування", {"fields": ("data_status", "source_note", "promoted_until", "is_active")}),
+        ("Статистика", {
+            "description": "Рахується автоматично.",
+            "fields": ("rating", "reviews_count", "confirmed_deals_count", "avg_response_minutes"),
+        }),
     )
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        # Сім категорій зручніше ставити галочками, ніж двома списками з перенесенням.
+        if db_field.name == "categories":
+            kwargs["widget"] = forms.CheckboxSelectMultiple
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
 
 @admin.register(ProviderPhoto)

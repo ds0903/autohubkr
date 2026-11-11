@@ -62,6 +62,25 @@ $env:DB_ENGINE="sqlite"; .\.venv\Scripts\python.exe manage.py test
 ```
 Щоб використовувати свій Postgres, змініть `DB_HOST/DB_PORT/DB_USER/DB_PASSWORD` у `.env` і створіть базу `autohubkr`.
 
+## Розгортання на сервері (Ubuntu, без Docker)
+Файли в `deploy/`: два systemd-сервіси (`autohubkr-web` на gunicorn 127.0.0.1:8390 і `autohubkr-bot`), блок nginx,
+шаблон `.env` і скрипт `deploy.sh`. Скрипт ідемпотентний і працює на спільному сервері: не оновлює системні пакети,
+не чіпає firewall та чужі сайти, створює лише власну роль і базу Postgres, власні unit-файли й server-блок nginx.
+
+```bash
+# код лежить у /srv/autohubkr/app (git clone, git pull або розпакований архів)
+cd /srv/autohubkr/app && SERVER_NAME=<IP або домен> bash deploy/deploy.sh
+```
+- Якщо `.env` ще немає, скрипт створює його зі згенерованими `DJANGO_SECRET_KEY` і паролем БД; існуючий `.env` не змінює.
+  `GEMINI_API_KEY` і `TELEGRAM_BOT_TOKEN` вписує власник сам, потім `sudo systemctl enable --now autohubkr-bot` і
+  `sudo systemctl restart autohubkr-web`. Без токена бот не запускається.
+- З `DJANGO_DEBUG=0` проєкт не стартує зі слабким `DJANGO_SECRET_KEY`. Статика отримує хеші в іменах (`collectstatic`),
+  кеш лежить у БД (`CACHE_BACKEND=db`), щоб його ділили воркери gunicorn.
+- Назовні віддаються лише фото виконавців (`/media/providers/`); фото заявок і чеки містять персональні дані й закриті.
+- Домен і https: додайте домен у `SERVER_NAME`, випустіть сертифікат (`certbot --nginx`), у `.env` поставте `DJANGO_HTTPS=1`
+  (Secure-cookie, заголовок проксі) і `DJANGO_CSRF_TRUSTED_ORIGINS=https://домен`, потім перезапустіть `autohubkr-web`.
+- Суперкористувач: `cd /srv/autohubkr/app && ../venv/bin/python manage.py createsuperuser`, роль задається в адмінці.
+
 ## Структура
 | Застосунок | Призначення (розділ ТЗ) |
 |---|---|

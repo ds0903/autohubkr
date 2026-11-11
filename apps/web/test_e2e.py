@@ -94,9 +94,9 @@ class BrowserTestCase(StaticLiveServerTestCase):
 
     def admin_login(self, page):
         page.goto(self.live_server_url + "/admin/login/")
-        page.fill("#id_username", "liaison")
-        page.fill("#id_password", ADMIN_PASSWORD)
-        page.locator("input[type=submit]").click()
+        page.fill("input[name=username]", "liaison")
+        page.fill("input[name=password]", ADMIN_PASSWORD)
+        page.locator("form button[type=submit]").click()
         expect(page).to_have_url(re.compile(r"/admin/$"))
 
     def need_htmx(self, page):
@@ -227,7 +227,7 @@ class DealLifecycleTests(BrowserTestCase):
         admin_page.locator("input[name=_selected_action]").first.check()
         admin_page.select_option("select[name=action]", "approve_selected")
         admin_page.locator("button[name=index]").click()
-        expect(admin_page.locator(".messagelist")).to_contain_text("Опубліковано: 1")
+        expect(admin_page.locator(".alert-success")).to_contain_text("Опубліковано: 1")
 
         public.reload()
         expect(public.locator("body")).to_contain_text("Все чітко, без сюрпризів")
@@ -435,6 +435,31 @@ class ResponsiveAndAdminTests(BrowserTestCase):
                      "orders/order/report/", f"orders/order/add/", f"catalog/provider/{self.provider.pk}/change/"):
             response = page.goto(f"{self.live_server_url}/admin/{path}")
             self.assertEqual(response.status, 200, path)
+
+    def test_admin_theme_colours_and_ukrainian_labels(self):
+        page = self.new_page()
+        self.admin_login(page)
+        expect(page.locator("h1").first).to_have_text("Панель зв'язкового")
+        # to_have_css повторює перевірку, поки закінчаться плавні переходи кольору
+        expect(page.locator("#jazzy-navbar")).to_have_css("background-color", "rgb(11, 74, 143)")
+        expect(page.locator("#jazzy-sidebar")).to_have_css("background-color", "rgb(10, 37, 64)")
+        expect(page.locator("#jazzy-navigation .nav-link.active")).to_have_css("background-color", "rgb(255, 200, 0)")
+        expect(page.locator("#jazzy-navigation")).to_contain_text("Головна")
+        expect(page.locator("body")).not_to_contain_text("Dashboard")
+        expect(page.locator(".app-footer")).not_to_contain_text("Jazzmin")
+        expect(page.locator(".app-footer")).to_contain_text("АвтоХаб КР")
+        expect(page.locator(".stat-card")).to_have_count(4)
+        # з картки показника можна перейти до відфільтрованого списку
+        page.locator(".stat-card--signal").click()
+        expect(page).to_have_url(re.compile(r"/admin/orders/order/\?status__exact=new"))
+        expect(page).to_have_title(re.compile(r"Виберіть .* щоб змінити"))  # список відкрився, а не сторінка помилки
+
+    def test_admin_dashboard_and_forms_fit_a_phone(self):
+        page = self.new_page(viewport={"width": 375, "height": 812})
+        self.admin_login(page)
+        for path in ("", "catalog/provider/", f"catalog/provider/{self.provider.pk}/change/", "orders/order/report/"):
+            page.goto(f"{self.live_server_url}/admin/{path}")
+            self.assert_no_horizontal_scroll(page, f"admin/{path}")
 
     def test_anonymous_cannot_reach_admin_or_private_pages(self):
         page = self.new_page()

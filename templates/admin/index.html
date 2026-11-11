@@ -1,0 +1,117 @@
+{% extends "admin/base_site.html" %}
+{% load admin_dashboard %}
+
+{% block title %}Панель зв'язкового · АвтоХаб КР{% endblock %}
+{% block content_title %}{% endblock %}
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+{% admin_dashboard_stats as s %}
+<div class="db-wrap">
+  <div class="db-header">
+    <div>
+      <h1>Панель зв'язкового</h1>
+      <p>Вітаємо, <strong>{{ user.get_username }}</strong>. Ось що відбувається на платформі.</p>
+    </div>
+    <div class="db-date">{% now "d.m.Y" %}</div>
+  </div>
+
+  {% if perms.orders.view_order %}
+  <div class="stat-grid">
+    <a class="stat-card stat-card--signal" href="{% url 'admin:orders_order_changelist' %}?status__exact=new">
+      <span class="stat-icon"><i class="fas fa-inbox"></i></span>
+      <span class="stat-num">{{ s.orders_new }}</span>
+      <span class="stat-label">Нові заявки</span>
+      <span class="stat-sub">{% if s.orders_new %}Потрібен виконавець{% else %}Усе розібрано{% endif %}</span>
+    </a>
+    <a class="stat-card" href="{% url 'admin:orders_order_changelist' %}">
+      <span class="stat-icon"><i class="fas fa-route"></i></span>
+      <span class="stat-num">{{ s.orders_active }}</span>
+      <span class="stat-label">Заявки в роботі</span>
+      <span class="stat-sub">За 7 днів надійшло: {{ s.orders_week }}</span>
+    </a>
+    <a class="stat-card stat-card--ok" href="{% url 'admin:orders_order_report' %}">
+      <span class="stat-icon"><i class="fas fa-handshake"></i></span>
+      <span class="stat-num">{{ s.deals }}</span>
+      <span class="stat-label">Підтверджені угоди</span>
+      <span class="stat-sub">Конверсія з заявки: {{ s.conversion }}%</span>
+    </a>
+    {% if perms.catalog.view_provider %}
+    <a class="stat-card" href="{% url 'admin:catalog_provider_changelist' %}">
+      <span class="stat-icon"><i class="fas fa-wrench"></i></span>
+      <span class="stat-num">{{ s.providers }}</span>
+      <span class="stat-label">Виконавців у каталозі</span>
+      <span class="stat-sub">Клієнтів на платформі: {{ s.clients }}</span>
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="db-cols">
+    <section class="db-panel">
+      <h2 class="db-section-title">Потребує уваги</h2>
+      <ul class="todo">
+        {% if perms.orders.view_offer %}
+        <li><a href="{% url 'admin:orders_offer_changelist' %}?status__exact=requested">
+          <span>Виконавці ще не відповіли на запит</span><b class="todo-n{% if not s.offers_waiting %} is-zero{% endif %}">{{ s.offers_waiting }}</b></a></li>
+        {% endif %}
+        {% if perms.reviews.view_review %}
+        <li><a href="{% url 'admin:reviews_review_changelist' %}?status__exact=pending">
+          <span>Відгуки на модерації</span><b class="todo-n{% if not s.reviews_pending %} is-zero{% endif %}">{{ s.reviews_pending }}</b></a></li>
+        {% endif %}
+        {% if perms.catalog.view_providerphoto %}
+        <li><a href="{% url 'admin:catalog_providerphoto_changelist' %}?is_approved__exact=0">
+          <span>Фото виконавців на модерації</span><b class="todo-n{% if not s.photos_pending %} is-zero{% endif %}">{{ s.photos_pending }}</b></a></li>
+        {% endif %}
+        {% if perms.catalog.view_provider %}
+        <li><a href="{% url 'admin:catalog_provider_changelist' %}?data_status__exact=collected">
+          <span>Виконавці з неперевіреними даними</span><b class="todo-n{% if not s.providers_unconfirmed %} is-zero{% endif %}">{{ s.providers_unconfirmed }}</b></a></li>
+        {% endif %}
+      </ul>
+    </section>
+
+    <section class="db-panel">
+      <h2 class="db-section-title">Швидкі дії</h2>
+      <div class="quick">
+        {% if perms.catalog.add_provider %}
+        <a class="quick-item" href="{% url 'admin:catalog_provider_add' %}"><i class="fas fa-plus"></i><b>Додати виконавця</b><span>СТО, мийка, шиномонтаж</span></a>
+        {% endif %}
+        {% if perms.orders.add_order %}
+        <a class="quick-item" href="{% url 'admin:orders_order_add' %}"><i class="fas fa-phone"></i><b>Заявка вручну</b><span>Клієнт зателефонував</span></a>
+        {% endif %}
+        {% if perms.orders.view_order %}
+        <a class="quick-item" href="{% url 'admin:orders_order_report' %}"><i class="fas fa-chart-line"></i><b>Звіт пілота</b><span>Метрики й причини обходу</span></a>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  {% if perms.orders.view_order %}
+  <section class="db-panel db-panel--table">
+    <div class="db-section-head">
+      <h2 class="db-section-title">Останні заявки</h2>
+      <a href="{% url 'admin:orders_order_changelist' %}" class="db-btn-all">Усі заявки</a>
+    </div>
+    <div class="db-table-wrap">
+      <table class="db-table">
+        <thead><tr><th>№</th><th>Клієнт</th><th>Що потрібно</th><th>Виконавець</th><th>Статус</th><th>Дата</th></tr></thead>
+        <tbody>
+          {% for o in s.recent_orders %}
+          <tr>
+            <td><a href="{% url 'admin:orders_order_change' o.pk %}">{{ o.pk }}</a></td>
+            <td>{{ o.client }}</td>
+            <td>{% firstof o.service_type o.description|truncatechars:48 %}</td>
+            <td>{% if o.provider %}{{ o.provider }}{% else %}<span class="muted">Не обрано</span>{% endif %}</td>
+            <td><span class="db-badge db-badge--{{ o.status }}">{{ o.get_status_display }}</span></td>
+            <td>{{ o.created_at|date:"d.m H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6"><div class="db-empty">Заявок ще немає</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

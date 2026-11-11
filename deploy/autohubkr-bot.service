@@ -1,0 +1,21 @@
+[Unit]
+Description=АвтоХаб КР: Telegram-бот (long polling) і черга сповіщень
+After=network.target postgresql.service
+
+[Service]
+User=deploy
+Group=deploy
+WorkingDirectory=/srv/autohubkr/app
+ExecStart=/srv/autohubkr/venv/bin/python manage.py runbot
+Restart=on-failure
+RestartSec=15
+MemoryHigh=200M
+MemoryMax=260M
+Nice=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
