@@ -103,14 +103,15 @@ class DashboardTests(TestCase):
                                 {"username": "liaison", "password": "pass12345"})
         self.assertRedirects(resp, "/admin/catalog/provider/", fetch_redirect_response=False)
 
-    def test_provider_form_has_short_tabs_and_checkbox_categories(self):
+    def test_provider_form_has_short_titles_and_checkbox_choices(self):
         resp = self.client.get(reverse("admin:catalog_provider_change", args=[self.w["provider"].pk]))
         self.assertContains(resp, 'type="checkbox" name="categories"')
         self.assertNotContains(resp, "Контакти (приховані")
         self.assertContains(resp, "Приховані від клієнта до підтвердження запису.")
         self.assertContains(resp, "Рахується автоматично.")
-        # бренди обираються пошуком, а не двома списками з англійськими підказками
+        # марки обираються галочками, а не двома списками з англійськими підказками чи пошуковим віджетом
         self.assertNotContains(resp, "selector-available")
+        self.assertNotContains(resp, "select2")
 
     def test_sidebar_groups_are_ordered_for_daily_work(self):
         resp = self.client.get(reverse("admin:index"))
@@ -154,11 +155,15 @@ class ProductionStaticFilesTests(TestCase):
     def test_panel_pages_render_with_hashed_static_files(self):
         provider = self.w["provider"]
         for url in (reverse("admin:index"), reverse("admin:orders_order_changelist"),
+                    reverse("admin:catalog_provider_changelist"), reverse("admin:orders_order_add"),
                     reverse("admin:catalog_provider_change", args=[provider.pk]),
+                    reverse("admin:catalog_provider_delete", args=[provider.pk]),
                     reverse("admin:orders_order_report")):
             resp = self.client.get(url)
             self.assertEqual(resp.status_code, 200, url)
         html = self.client.get(reverse("admin:index")).content.decode()
         self.assertRegex(html, r"/static/core/admin\.[0-9a-f]{12}\.css")
+        self.assertRegex(html, r"/static/core/admin-ui\.[0-9a-f]{12}\.css")
+        self.assertRegex(html, r"/static/core/admin-ui\.[0-9a-f]{12}\.js")
         self.client.logout()
         self.assertEqual(self.client.get(reverse("admin:login")).status_code, 200)

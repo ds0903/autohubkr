@@ -1,0 +1,13 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{# Спільна основа сторінок панелі: до оформлення Jazzmin додаються картки, форми й власні випадні списки. #}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'core/admin-ui.css' %}">
+{% endblock %}
+
+{% block extrajs %}
+{{ block.super }}
+<script src="{% static 'core/admin-ui.js' %}"></script>
+{% endblock %}

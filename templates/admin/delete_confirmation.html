@@ -1,0 +1,67 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block title %}Видалити: {{ object|truncatewords:"8" }} | {{ jazzmin_settings.site_title }}{% endblock %}
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} delete-confirmation cm-form{% endblock %}
+{% block content_title %}{% endblock %}
+{% block breadcrumbs %}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="{% static 'admin/js/cancel.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="cm-page cm-page--form col-12">
+  <div class="cm-form-head">
+    <div>
+      <a class="cm-back" href="{% url opts|admin_urlname:'change' object.pk|admin_urlquote %}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        {{ object|truncatewords:"8" }}
+      </a>
+      <h1>Видалити: {{ object|truncatewords:"18" }}</h1>
+    </div>
+  </div>
+
+  <section class="cm-fieldset cm-fieldset--danger">
+    <h2>{% if perms_lacking or protected %}Видалення неможливе{% else %}Підтвердження{% endif %}</h2>
+    <div class="cm-fieldset__content">
+      {% if perms_lacking %}
+      <p class="cm-del-text">Разом із цим записом видаляться пов'язані дані, але у вас немає прав на видалення таких типів:</p>
+      <ul class="cm-del-list">{% for obj in perms_lacking %}<li>{{ obj }}</li>{% endfor %}</ul>
+      {% elif protected %}
+      <p class="cm-del-text">Цей запис не можна видалити, бо він використовується в таких пов'язаних записах:</p>
+      <ul class="cm-del-list">{% for obj in protected %}<li>{{ obj }}</li>{% endfor %}</ul>
+      {% else %}
+      <p class="cm-del-text">Видалити «{{ object }}»? Цю дію не можна скасувати. Разом із записом видаляться:</p>
+      {% if model_count %}
+      <div class="cm-del-chips">
+        {% for name, count in model_count.items %}<span class="cm-del-chip"><b>{{ count }}</b> {{ name }}</span>{% endfor %}
+      </div>
+      {% endif %}
+      <ul class="cm-del-list">{{ deleted_objects|unordered_list }}</ul>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if not perms_lacking and not protected %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="post" value="yes">
+    {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1">{% endif %}
+    {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}">{% endif %}
+    <div class="cm-submit">
+      <button type="submit" class="cm-btn-danger">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+        Так, видалити
+      </button>
+      <a href="{% url opts|admin_urlname:'change' object.pk|admin_urlquote %}" class="cm-btn cm-btn--ghost cancel-link">Скасувати</a>
+    </div>
+  </form>
+  {% else %}
+  <div class="cm-submit">
+    <a href="{% url opts|admin_urlname:'change' object.pk|admin_urlquote %}" class="cm-btn cm-btn--ghost">Назад</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% load i18n admin_urls static admin_modify %}
+<div class="js-inline-admin-formset inline-group cm-inline" id="{{ inline_admin_formset.formset.prefix }}-group"
+     data-inline-type="tabular"
+     data-inline-formset="{{ inline_admin_formset.inline_formset_data }}">
+  <div class="tabular inline-related {% if forloop.last %}last-related{% endif %}">
+    {{ inline_admin_formset.formset.management_form }}
+    <fieldset class="module {{ inline_admin_formset.classes }}">
+      {{ inline_admin_formset.formset.non_form_errors }}
+      <div class="cm-inline__scroll">
+      <table class="cm-table">
+        <thead><tr>
+          <th class="original"></th>
+          {% for field in inline_admin_formset.fields %}
+            {% if not field.widget.is_hidden %}
+            <th class="column-{{ field.name }}{% if field.required %} required{% endif %}">{{ field.label|capfirst }}
+              {% if field.help_text %}<span class="cm-tip" title="{{ field.help_text|striptags }}">?</span>{% endif %}
+            </th>
+            {% endif %}
+          {% endfor %}
+          {% if inline_admin_formset.formset.can_delete and inline_admin_formset.has_delete_permission %}<th class="column-actions">Видалити</th>{% endif %}
+        </tr></thead>
+
+        <tbody>
+        {% for inline_admin_form in inline_admin_formset %}
+          {% if inline_admin_form.form.non_field_errors %}
+          <tr class="row-form-errors"><td colspan="{{ inline_admin_form|cell_count }}">{{ inline_admin_form.form.non_field_errors }}</td></tr>
+          {% endif %}
+          <tr class="form-row{% if inline_admin_form.original or inline_admin_form.show_url %} has_original{% endif %}{% if forloop.last and inline_admin_formset.has_add_permission %} empty-form{% endif %}"
+              id="{{ inline_admin_formset.formset.prefix }}-{% if not forloop.last %}{{ forloop.counter0 }}{% else %}empty{% endif %}">
+            <td class="original">
+              {% if inline_admin_form.original or inline_admin_form.show_url %}
+              <p>
+                {% if inline_admin_form.original %}
+                  {% if inline_admin_form.model_admin.show_change_link and inline_admin_form.model_admin.has_registered_model %}
+                  <a href="{% url inline_admin_form.model_admin.opts|admin_urlname:'change' inline_admin_form.original.pk|admin_urlquote %}" class="cm-inline-link {% if inline_admin_formset.has_change_permission %}inlinechangelink{% else %}inlineviewlink{% endif %}" title="Відкрити" aria-label="Відкрити">↗</a>
+                  {% endif %}
+                  {% if inline_admin_form.show_url %}
+                  <a href="{{ inline_admin_form.absolute_url }}" class="cm-inline-link" target="_blank" rel="noopener" title="На сайті" aria-label="На сайті">↗</a>
+                  {% endif %}
+                {% endif %}
+              </p>
+              {% endif %}
+              {% if inline_admin_form.needs_explicit_pk_field %}{{ inline_admin_form.pk_field.field }}{% endif %}
+              {% if inline_admin_form.fk_field %}{{ inline_admin_form.fk_field.field }}{% endif %}
+              {% spaceless %}
+              {% for fieldset in inline_admin_form %}
+                {% for line in fieldset %}
+                  {% for field in line %}
+                    {% if not field.is_readonly and field.field.is_hidden %}{{ field.field }}{% endif %}
+                  {% endfor %}
+                {% endfor %}
+              {% endfor %}
+              {% endspaceless %}
+            </td>
+            {% for fieldset in inline_admin_form %}
+              {% for line in fieldset %}
+                {% for field in line %}
+                  {% if field.is_readonly or not field.field.is_hidden %}
+                  <td{% if field.field.name %} class="field-{{ field.field.name }}"{% endif %} data-label="{{ field.field.label }}">
+                    {% if field.is_readonly %}
+                      <p class="cm-readonly-cell">{{ field.contents }}</p>
+                    {% else %}
+                      {{ field.field }}
+                      {% if field.field.errors %}<div class="cm-field-error">{% for error in field.field.errors %}{{ error }} {% endfor %}</div>{% endif %}
+                    {% endif %}
+                  </td>
+                  {% endif %}
+                {% endfor %}
+              {% endfor %}
+            {% endfor %}
+            {% if inline_admin_formset.formset.can_delete and inline_admin_formset.has_delete_permission %}
+            <td class="delete">{% if inline_admin_form.original %}<span class="cm-row-delete-box">{{ inline_admin_form.deletion_field.field }}<button type="button" class="cm-row-delete" aria-pressed="false" title="Видалити" aria-label="Видалити рядок"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></span>{% endif %}</td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </fieldset>
+  </div>
+</div>

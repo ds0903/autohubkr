@@ -3,9 +3,36 @@ from django.template.response import TemplateResponse
 from django.urls import path
 from django.utils import timezone
 
+from apps.core.admin_cards import CardListAdminMixin, price_range, short_dt
+
 from . import services
 from .models import BypassReport, Offer, Order, OrderPhoto, OrderStatusLog
 from .services import OrderError
+
+ORDER_STATUS_TONE = {
+    Order.Status.NEW: "road",
+    Order.Status.OFFERED: "warn",
+    Order.Status.BOOKED: "ink",
+    Order.Status.VISITED: "ink",
+    Order.Status.ESTIMATE: "ink",
+    Order.Status.DONE: "ok",
+    Order.Status.REVIEWED: "ok",
+    Order.Status.CANCELLED: "muted",
+}
+OFFER_STATUS_TONE = {
+    Offer.Status.REQUESTED: "warn",
+    Offer.Status.PROPOSED: "road",
+    Offer.Status.ACCEPTED: "ok",
+    Offer.Status.DECLINED: "muted",
+    Offer.Status.REJECTED: "muted",
+}
+
+
+def person(user) -> str:
+    """Людське ім'я для картки: ім'я, інакше логін."""
+    if user is None:
+        return ""
+    return user.get_full_name() or user.get_username()
 
 
 def _respond_if_needed(offer: Offer, user) -> None:
@@ -75,10 +102,16 @@ class PhotoInline(admin.TabularInline):
 
 
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(CardListAdminMixin, admin.ModelAdmin):
     list_display = ("id", "created_at", "client", "status", "provider", "liaison", "service_type", "source", "is_deal")
     list_filter = ("status", "city", "source", "lead_origin", "category", "liaison")
+    list_select_related = ("client", "city", "provider", "liaison", "service_type", "category", "vehicle__brand")
     search_fields = ("id", "description", "client__username", "client__phone", "provider__name")
+    add_label = "Нова заявка"
+    card_tab_filter = "status"
+    card_bar_filters = ("city", "liaison")
+    card_head_links = (("Звіт пілота", "admin:orders_order_report"),)
+    card_empty_text = "Заявки з'являться, коли клієнти надішлють їх із сайту чи бота, або додайте першу вручну."
     raw_id_fields = ("client", "vehicle", "provider")
     readonly_fields = ("status", "visit_code", "visit_confirmed_at", "provider_confirmed_at", "client_confirmed_at",
                        "estimate_approved_at")
@@ -104,6 +137,34 @@ class OrderAdmin(admin.ModelAdmin):
     @admin.display(boolean=True, description="Угода")
     def is_deal(self, obj):
         return obj.is_confirmed_deal
+
+    def card_title(self, obj):
+        return f"Заявка №{obj.pk}"
+
+    def card_subtitle(self, obj):
+        what = obj.service_type.name if obj.service_type_id else (obj.category.name if obj.category_id else "")
+        car = obj.vehicle.display_name if obj.vehicle_id else ""
+        return " · ".join(part for part in (what, car) if part)
+
+    def card_text(self, obj):
+        return obj.description
+
+    def card_badges(self, obj):
+        badges = [(obj.get_status_display(), ORDER_STATUS_TONE.get(obj.status, "muted"))]
+        if obj.is_confirmed_deal:
+            badges.append(("Угода", "signal"))
+        return badges
+
+    def card_meta(self, obj):
+        return [
+            ("Клієнт", person(obj.client)),
+            ("Виконавець", obj.provider.name if obj.provider_id else None),
+            ("Відповідальний", person(obj.liaison)),
+            ("Місто", obj.city.name),
+            ("Канал", obj.get_source_display()),
+            ("Створено", short_dt(obj.created_at)),
+            ("Візит", short_dt(obj.scheduled_at) if obj.scheduled_at else None),
+        ]
 
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
@@ -192,18 +253,38 @@ class OrderAdmin(admin.ModelAdmin):
         )
         return TemplateResponse(request, "admin/orders/report.html", context)
 
-    def changelist_view(self, request, extra_context=None):
-        extra_context = dict(extra_context or {}, report_url="report/")
-        return super().changelist_view(request, extra_context)
-
-
 @admin.register(Offer)
-class OfferAdmin(admin.ModelAdmin):
+class OfferAdmin(CardListAdminMixin, admin.ModelAdmin):
     list_display = ("order", "provider", "status", "price_min", "price_max", "response_minutes_display")
     list_filter = ("status",)
+    list_select_related = ("order", "provider")
     raw_id_fields = ("order", "provider")
     readonly_fields = ("responded_at",)
     actions = ["choose_offer"]
+    add_label = "Нова пропозиція"
+    card_tab_filter = "status"
+
+    def card_title(self, obj):
+        return f"Заявка №{obj.order_id}"
+
+    def card_subtitle(self, obj):
+        return obj.provider.name
+
+    def card_text(self, obj):
+        return obj.comment
+
+    def card_badges(self, obj):
+        return [(obj.get_status_display(), OFFER_STATUS_TONE.get(obj.status, "muted"))]
+
+    def card_meta(self, obj):
+        has_price = obj.price_min is not None or obj.price_max is not None
+        return [
+            ("Ціна", price_range(obj.price_min, obj.price_max) if has_price else None),
+            ("Строк", obj.term_note),
+            ("Час запису", obj.suggested_time),
+            ("Відповів за", f"{obj.response_minutes} хв" if obj.response_minutes is not None else None),
+            ("Створено", short_dt(obj.created_at)),
+        ]
 
     @admin.display(description="Відповідь, хв")
     def response_minutes_display(self, obj):
@@ -223,7 +304,25 @@ class OfferAdmin(admin.ModelAdmin):
 
 
 @admin.register(BypassReport)
-class BypassReportAdmin(admin.ModelAdmin):
+class BypassReportAdmin(CardListAdminMixin, admin.ModelAdmin):
     list_display = ("order", "side", "reason", "created_at")
     list_filter = ("side", "reason")
+    list_select_related = ("order",)
     raw_id_fields = ("order",)
+    add_label = "Записати випадок"
+    card_tab_filter = "side"
+
+    def card_title(self, obj):
+        return f"Заявка №{obj.order_id}"
+
+    def card_subtitle(self, obj):
+        return obj.get_side_display()
+
+    def card_text(self, obj):
+        return obj.note
+
+    def card_badges(self, obj):
+        return [(obj.get_reason_display(), "warn")]
+
+    def card_meta(self, obj):
+        return [("Створено", short_dt(obj.created_at))]

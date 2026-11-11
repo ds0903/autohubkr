@@ -224,8 +224,11 @@ class DealLifecycleTests(BrowserTestCase):
         admin_page = self.new_page()
         self.admin_login(admin_page)
         admin_page.goto(self.live_server_url + "/admin/reviews/review/")
-        admin_page.locator("input[name=_selected_action]").first.check()
-        admin_page.select_option("select[name=action]", "approve_selected")
+        expect(admin_page.locator("#cmBulk")).to_be_hidden()
+        admin_page.locator(".cm-card").first.locator("input[name=_selected_action]").check()
+        expect(admin_page.locator("#cmBulk")).to_be_visible()
+        admin_page.locator("#cmBulk .cm-select__trigger").click()
+        admin_page.locator(".cm-select__menu.is-open .cm-select__item", has_text="Опублікувати вибрані відгуки").click()
         admin_page.locator("button[name=index]").click()
         expect(admin_page.locator(".alert-success")).to_contain_text("Опубліковано: 1")
 
@@ -452,14 +455,74 @@ class ResponsiveAndAdminTests(BrowserTestCase):
         # з картки показника можна перейти до відфільтрованого списку
         page.locator(".stat-card--signal").click()
         expect(page).to_have_url(re.compile(r"/admin/orders/order/\?status__exact=new"))
-        expect(page).to_have_title(re.compile(r"Виберіть .* щоб змінити"))  # список відкрився, а не сторінка помилки
+        expect(page).to_have_title(re.compile(r"^Заявки \|"))  # список відкрився, а не сторінка помилки
+        expect(page.locator(".cm-page h1")).to_contain_text("Заявки")
+        expect(page.locator(".cm-tab.is-active")).to_have_text("Заявка")  # фільтр «Нові» підсвічено вкладкою
 
     def test_admin_dashboard_and_forms_fit_a_phone(self):
         page = self.new_page(viewport={"width": 375, "height": 812})
         self.admin_login(page)
-        for path in ("", "catalog/provider/", f"catalog/provider/{self.provider.pk}/change/", "orders/order/report/"):
+        for path in ("", "catalog/provider/", f"catalog/provider/{self.provider.pk}/change/", "orders/order/report/",
+                     "orders/order/", "orders/order/add/", "reviews/review/", "accounts/user/",
+                     "garage/vehicle/", "orders/offer/add/"):
             page.goto(f"{self.live_server_url}/admin/{path}")
             self.assert_no_horizontal_scroll(page, f"admin/{path}")
+
+    def test_admin_lists_are_cards_and_every_dropdown_is_custom(self):
+        Order.objects.create(client=self.w["client"], city=self.w["city"], description="Стукає спереду")
+        page = self.new_page()
+        self.admin_login(page)
+
+        # список: картки замість таблиці
+        page.goto(f"{self.live_server_url}/admin/orders/order/")
+        expect(page.locator(".cm-card")).to_have_count(Order.objects.count())
+        expect(page.locator("table#result_list, .select2-container")).to_have_count(0)
+        expect(page.locator(".cm-tab.is-active")).to_have_text("Всі")
+
+        # фільтр: власна панель і власний випадний список, а не вбудований <select>
+        page.locator(".cm-filters__trigger").click()
+        expect(page.locator("#cmFilterForm")).to_be_visible()
+        page.locator("#cmFilterForm .cm-select__trigger").first.click()
+        menu = page.locator(".cm-select__menu.is-open")
+        expect(menu).to_be_visible()
+        expect(menu.locator(".cm-select__item").first).to_be_visible()
+        menu.locator(".cm-select__item", has_text="Сайт").click()
+        page.locator("#cmFilterForm button[type=submit]").click()
+        expect(page).to_have_url(re.compile(r"source__exact=site"))
+        expect(page.locator(".cm-card")).to_have_count(Order.objects.filter(source="site").count())
+        expect(page.locator(".cm-filters__count")).to_have_text("1")
+
+        # вкладка статусу відкриває відфільтрований список
+        page.goto(f"{self.live_server_url}/admin/orders/order/")
+        page.locator(".cm-tab", has_text="Заявка").first.click()
+        expect(page).to_have_url(re.compile(r"status__exact=new"))
+        expect(page.locator(".cm-card")).to_have_count(Order.objects.filter(status="new").count())
+
+        # форма: усі <select> сховані, замість них кнопки власного списку
+        page.goto(f"{self.live_server_url}/admin/orders/order/add/")
+        natives = page.locator("select:not(.cm-select-native)")
+        visible_native = [natives.nth(i) for i in range(natives.count()) if natives.nth(i).is_visible()]
+        self.assertEqual(visible_native, [], "на формі лишився вбудований випадний список")
+        city = page.locator("#id_city + .cm-select .cm-select__trigger")
+        city.click()
+        page.locator(".cm-select__menu.is-open .cm-select__item", has_text=self.w["city"].name).click()
+        self.assertEqual(page.locator("#id_city").input_value(), str(self.w["city"].pk))
+        expect(city).to_contain_text(self.w["city"].name)
+
+    def test_admin_toggle_switches_a_provider_without_opening_the_form(self):
+        page = self.new_page()
+        self.admin_login(page)
+        page.goto(f"{self.live_server_url}/admin/catalog/provider/")
+        toggle = page.locator(".cm-card", has_text=self.provider.name).locator(".cm-state")
+        expect(toggle).to_have_text("У каталозі")
+        toggle.click()
+        expect(toggle).to_have_text("Прихований")
+        self.provider.refresh_from_db()
+        self.assertFalse(self.provider.is_active)
+        toggle.click()
+        expect(toggle).to_have_text("У каталозі")
+        self.provider.refresh_from_db()
+        self.assertTrue(self.provider.is_active)
 
     def test_anonymous_cannot_reach_admin_or_private_pages(self):
         page = self.new_page()

@@ -1,0 +1,205 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block title %}{{ opts.verbose_name_plural|capfirst }} | {{ jazzmin_settings.site_title }}{% endblock %}
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list cm-list{% endblock %}
+{% block content_title %}{% endblock %}
+{% block breadcrumbs %}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+{{ media.css }}
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+{% if action_form %}<script src="{% url 'admin:jsi18n' %}"></script>{% endif %}
+{{ media.js }}
+{% endblock %}
+
+{% block content %}
+{% url cl.opts|admin_urlname:'add' as add_url %}
+<div class="cm-page col-12" data-csrf="{{ csrf_token }}">
+  <div class="cm-head">
+    <h1 id="cmTitle">
+      {% if card_title %}{{ card_title }}{% else %}{{ opts.verbose_name_plural|capfirst }}{% endif %}
+      <span class="cm-badge" data-testid="count">{{ cl.result_count }}</span>
+    </h1>
+    <div class="cm-head__tools">
+      {% for label, url in card_head_links %}<a href="{{ url }}" class="cm-btn cm-btn--ghost">{{ label }}</a>{% endfor %}
+      {% if has_add_permission and not card_popup %}
+      <a href="{{ add_url }}" class="cm-btn-add">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        {{ card_add_label }}
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="cm-bar">
+    <div class="cm-quick">
+      {% if card_tabs %}
+      <div class="cm-tabs" role="tablist" aria-label="{{ card_tabs.title|capfirst }}">
+        {% for choice in card_tabs.choices %}
+        <a href="{{ choice.query_string|iriencode }}" class="cm-tab{% if choice.selected %} is-active{% endif %}">{{ choice.display }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% for group in card_bar %}
+      <div class="cm-dd{% if group.choices|length > 7 %} cm-dd--search{% endif %}">
+        <button type="button" class="cm-dd__trigger" aria-haspopup="listbox" aria-expanded="false">
+          <span class="cm-dd__title">{{ group.title|capfirst }}:</span>
+          <span class="cm-dd__value">{{ group.selected }}</span>
+          <svg class="cm-dd__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="cm-dd__menu" role="listbox">
+          {% for choice in group.choices %}
+          <a href="{{ choice.query_string|iriencode }}" role="option" class="cm-dd__item{% if choice.selected %} is-active{% endif %}">
+            <span>{{ choice.display }}</span>
+            {% if choice.selected %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>{% endif %}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if card_filters %}
+      <div class="cm-filters" id="cmFilters">
+        <button type="button" class="cm-filters__trigger{% if card_filters_active %} is-active{% endif %}" aria-haspopup="dialog" aria-expanded="false">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="22 3 2 3 10 12.5 10 19 14 21 14 12.5 22 3"/></svg>
+          Фільтри
+          {% if card_filters_active %}<span class="cm-filters__count">{{ card_filters_active }}</span>{% endif %}
+        </button>
+        <form class="cm-filters__panel" id="cmFilterForm" role="dialog" aria-label="Фільтри" autocomplete="off" method="get">
+          <div class="cm-filters__grid">
+            {% for group in card_filters %}
+            <div class="cm-filters__field{% if group.wide %} is-wide{% endif %}">
+              <label for="cmf-{{ forloop.counter }}">{{ group.title|capfirst }}</label>
+              <select id="cmf-{{ forloop.counter }}" name="{{ group.param }}" data-cm-search="{% if group.options|length > 7 %}1{% endif %}">
+                {% for option in group.options %}<option value="{{ option.value }}"{% if option.selected %} selected{% endif %}>{{ option.display }}</option>{% endfor %}
+              </select>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="cm-filters__foot">
+            <button type="button" class="cm-btn cm-btn--ghost" data-filters-reset>Скинути</button>
+            <button type="submit" class="cm-btn-add cm-btn-add--sm">Застосувати</button>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if cl.search_fields %}
+    <form method="get" class="cm-search" id="cmSearch" role="search">
+      {% for key, value in card_hidden_params %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="search" name="q" value="{{ cl.query }}" placeholder="Пошук" aria-label="Пошук">
+    </form>
+    {% endif %}
+  </div>
+
+  <div id="cmResults">
+  {% if not cards %}
+    <div class="cm-empty-state">
+      <div class="cm-empty-state__icon">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+      </div>
+      {% if cl.query or cl.has_active_filters %}
+      <h3>Нічого не знайдено</h3>
+      <p>За цими умовами в розділі «{{ opts.verbose_name_plural|capfirst }}» записів немає. Змініть пошук або скиньте фільтри.</p>
+      <a href="{{ cl.clear_all_filters_qs|default:'?' }}" class="cm-btn cm-btn--ghost">Скинути пошук і фільтри</a>
+      {% else %}
+      <h3>Тут ще нічого немає</h3>
+      <p>{% if card_empty_text %}{{ card_empty_text }}{% else %}У розділі «{{ opts.verbose_name_plural|capfirst }}» поки що порожньо.{% endif %}</p>
+      {% if has_add_permission and not card_popup %}
+      <a href="{{ add_url }}" class="cm-btn-add">{{ card_add_label }}</a>
+      {% endif %}
+      {% endif %}
+    </div>
+  {% else %}
+    <form id="changelist-form" method="post" novalidate>
+      {% csrf_token %}
+      {% if action_form and cl.show_admin_actions %}
+      <div class="cm-bulk" id="cmBulk" hidden>
+        <span class="cm-bulk__count">Вибрано: <b data-bulk-count>0</b></span>
+        <div class="cm-bulk__action">
+          {% for field in action_form %}{{ field }}{% endfor %}
+        </div>
+        <button type="submit" name="index" value="{{ action_index|default:0 }}" class="cm-btn-add cm-btn-add--sm">Виконати</button>
+        <button type="button" class="cm-btn cm-btn--ghost" data-bulk-all>Вибрати всі</button>
+        <button type="button" class="cm-btn cm-btn--ghost" data-bulk-clear>Зняти вибір</button>
+      </div>
+      {% endif %}
+
+      <div class="cm-grid{% if card_has_images %} cm-grid--photos{% endif %}" id="cmGrid">
+        {% for card in cards %}
+        <article class="cm-card{% if card.image %} cm-card--photo{% endif %}">
+          {% if card.image %}
+          <a href="{% if card_popup %}#{% else %}{{ card.change_url }}{% endif %}" class="cm-card__thumb"{% if card_popup %} data-popup-opener="{{ card.pick }}"{% endif %}>
+            <img src="{{ card.image }}" alt="{{ card.title }}" loading="lazy">
+          </a>
+          {% endif %}
+          <div class="cm-card__body">
+            <div class="cm-card__top">
+              {% if action_form and cl.show_admin_actions and not card_popup %}
+              <label class="cm-pickbox" title="Вибрати для масової дії">
+                <input type="checkbox" name="_selected_action" value="{{ card.pk }}" class="cm-pick" aria-label="Вибрати: {{ card.title }}">
+                <span aria-hidden="true"></span>
+              </label>
+              {% endif %}
+              <div class="cm-card__heading">
+                {% if card_popup %}
+                <a href="#" class="cm-card__title cm-card__title--link" data-popup-opener="{{ card.pick }}">{{ card.title }}</a>
+                {% else %}
+                <a href="{{ card.change_url }}" class="cm-card__title cm-card__title--link">{{ card.title }}</a>
+                {% endif %}
+                {% if card.subtitle %}<div class="cm-card__sub">{{ card.subtitle }}</div>{% endif %}
+              </div>
+            </div>
+            {% if card.badges %}
+            <div class="cm-card__badges">
+              {% for text, tone in card.badges %}<span class="cm-pill cm-pill--{{ tone }}">{{ text }}</span>{% endfor %}
+            </div>
+            {% endif %}
+            {% if card.text %}<p class="cm-card__text">{{ card.text }}</p>{% endif %}
+            {% if card.meta %}
+            <dl class="cm-chips">
+              {% for label, value in card.meta %}<div class="cm-chip"><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+            </dl>
+            {% endif %}
+            {% if not card_popup %}
+            <div class="cm-card__actions">
+              <a href="{{ card.change_url }}" class="cm-btn cm-btn--edit">{{ card.edit_label }}</a>
+              {% if card.view_url %}<a href="{{ card.view_url }}" target="_blank" rel="noopener" class="cm-btn cm-btn--view">На сайті</a>{% endif %}
+              {% for toggle in card.toggles %}
+              <button type="button" class="cm-state {% if toggle.on %}cm-state--on{% else %}cm-state--off{% endif %}"
+                      data-url="{{ toggle.url }}" data-on-label="{{ toggle.on_label }}" data-off-label="{{ toggle.off_label }}"
+                      aria-pressed="{% if toggle.on %}true{% else %}false{% endif %}">{% if toggle.on %}{{ toggle.on_label }}{% else %}{{ toggle.off_label }}{% endif %}</button>
+              {% endfor %}
+              {% if card.can_delete %}
+              <a href="{{ card.delete_url }}" class="cm-btn cm-btn--del" title="Видалити" aria-label="Видалити: {{ card.title }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+              </a>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </form>
+  {% endif %}
+
+  {% if card_pages %}
+  <nav class="cm-pagination" aria-label="Сторінки">
+    {% for page in card_pages %}
+      {% if page.url %}<a href="{{ page.url|iriencode }}" class="cm-page-link{% if page.current %} is-current{% endif %}"{% if page.current %} aria-current="page"{% endif %}>{{ page.label }}</a>
+      {% else %}<span class="cm-page-gap">{{ page.label }}</span>{% endif %}
+    {% endfor %}
+  </nav>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}

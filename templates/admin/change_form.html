@@ -1,0 +1,96 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block title %}{% if add %}Додати: {{ opts.verbose_name }}{% else %}{{ original|truncatechars:60 }}{% endif %} | {{ jazzmin_settings.site_title }}{% endblock %}
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-form cm-form{% endblock %}
+{% block content_title %}{% endblock %}
+{% block breadcrumbs %}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="{% url 'admin:jsi18n' %}"></script>
+{{ media }}
+{% endblock %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'admin/css/forms.css' %}">{% endblock %}
+
+{% block content %}
+<div class="cm-page cm-page--form col-12">
+  <div class="cm-form-head">
+    <div>
+      {% if not is_popup %}
+      <a class="cm-back" href="{% url opts|admin_urlname:'changelist' %}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        {{ opts.verbose_name_plural|capfirst }}
+      </a>
+      {% endif %}
+      <h1>{% if add %}Додати: {{ opts.verbose_name }}{% else %}{{ original }}{% endif %}</h1>
+    </div>
+    {% if change and not is_popup %}
+    <div class="cm-form-tools">
+      {% if has_absolute_url %}
+      <a href="{% url 'admin:view_on_site' content_type_id original.pk %}" target="_blank" rel="noopener" class="cm-btn cm-btn--view">На сайті</a>
+      {% endif %}
+      {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
+      {% if history_url %}<a href="{% add_preserved_filters history_url %}" class="cm-btn cm-btn--ghost">Історія змін</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <form {% if has_file_field %}enctype="multipart/form-data" {% endif %}{% if form_url %}action="{{ form_url }}" {% endif %}method="post" id="{{ opts.model_name }}_form" novalidate>
+    {% csrf_token %}
+    {% block form_top %}{% endblock %}
+    {% if is_popup %}<input type="hidden" name="_popup" value="1">{% endif %}
+    {% if to_field %}<input type="hidden" name="_to_field" value="{{ to_field }}">{% endif %}
+    {% if save_on_top %}{% block submit_buttons_top %}{% submit_row %}{% endblock %}{% endif %}
+
+    {% if errors %}
+    <div class="cm-errors" role="alert">
+      <b>{% if errors|length == 1 %}Виправте помилку нижче.{% else %}Виправте помилки нижче.{% endif %}</b>
+      {{ adminform.form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    {% block field_sets %}
+    <div class="cm-cols">
+      <div class="cm-cols__main">
+        {% for fieldset in adminform %}
+        {% if "cm-side" not in fieldset.classes %}{% include "admin/cm_fieldset.html" %}{% endif %}
+        {% endfor %}
+      </div>
+      <aside class="cm-cols__side">
+        {% for fieldset in adminform %}
+        {% if "cm-side" in fieldset.classes %}{% include "admin/cm_fieldset.html" %}{% endif %}
+        {% endfor %}
+      </aside>
+    </div>
+    {% endblock %}
+
+    {% block after_field_sets %}{% endblock %}
+
+    {% block inline_field_sets %}
+    {% for inline_admin_formset in inline_admin_formsets %}
+    <details class="cm-fieldset cm-fieldset--collapse cm-fieldset--inline" open>
+      <summary>
+        <span>{{ inline_admin_formset.opts.verbose_name_plural|capfirst }}</span>
+        <svg class="cm-fs-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div class="cm-fieldset__content">
+        {% include inline_admin_formset.opts.template %}
+      </div>
+    </details>
+    {% endfor %}
+    {% endblock %}
+
+    {% block after_related_objects %}{% endblock %}
+
+    {% block submit_buttons_bottom %}{% submit_row %}{% endblock %}
+
+    {% block admin_change_form_document_ready %}
+    <script id="django-admin-form-add-constants" src="{% static 'admin/js/change_form.js' %}"{% if adminform and add %} data-model-name="{{ opts.model_name }}"{% endif %} async></script>
+    {% endblock %}
+
+    {% prepopulated_fields_js %}
+  </form>
+</div>
+{% endblock %}

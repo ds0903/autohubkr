@@ -1,0 +1,43 @@
+{% if fieldset.name %}
+<details class="cm-fieldset cm-fieldset--collapse {{ fieldset.classes|cut:'collapse' }}"{% if "collapse" not in fieldset.classes %} open{% endif %}>
+  <summary>
+    <span>{{ fieldset.name }}</span>
+    <svg class="cm-fs-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+  </summary>
+{% else %}
+<section class="cm-fieldset {{ fieldset.classes }}">
+{% endif %}
+  <div class="cm-fieldset__content">
+    {% if fieldset.description %}<div class="cm-fieldset__desc">{{ fieldset.description|safe }}</div>{% endif %}
+    <div class="cm-fields">
+      {% for line in fieldset %}
+      <div class="cm-line{% if not line.has_visible_field %} cm-line--hidden{% endif %}">
+        {% for field in line %}
+        <div class="cm-field{% if field.is_checkbox %} cm-field--check{% endif %}{% if not field.is_readonly and field.field.errors %} has-error{% endif %}">
+          {% if field.is_checkbox %}
+          <label class="cm-check">
+            {{ field.field }}
+            <span>{{ field.field.label }}</span>
+          </label>
+          {% else %}
+          {% if field.is_readonly %}
+          <label>{{ field.field.label|capfirst }}</label>
+          <div class="cm-readonly">{{ field.contents }}</div>
+          {% else %}
+          <label for="{{ field.field.id_for_label }}">{{ field.field.label }}{% if field.field.field.required %}<i class="cm-req" title="Обов'язкове поле">*</i>{% endif %}</label>
+          {{ field.field }}
+          {% endif %}
+          {% endif %}
+          {% if field.field.help_text %}<div class="cm-help">{{ field.field.help_text|safe }}</div>{% endif %}
+          {% if not field.is_readonly and field.field.errors %}<div class="cm-field-error">{% for error in field.field.errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+{% if fieldset.name %}
+</details>
+{% else %}
+</section>
+{% endif %}
