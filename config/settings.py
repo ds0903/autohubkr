@@ -128,7 +128,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 if not DEBUG:
     STORAGES = {
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"},
+        # ManifestStaticFilesStorage, але без 500 для каталогів у {% static %} (так робить Jazzmin)
+        "staticfiles": {"BACKEND": "apps.core.storage.TolerantManifestStaticFilesStorage"},
     }
 
 # gunicorn запускає кілька процесів: локальний кеш у кожного свій, тож ліміти запитів до ШІ й кеш імені бота

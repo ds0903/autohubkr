@@ -1,6 +1,9 @@
 """Оформлення адмінки (Jazzmin) і головна сторінка зв'язкового: показники, черга уваги, права доступу."""
+import tempfile
+
 from django.contrib.auth.models import Permission
-from django.test import TestCase
+from django.core.management import call_command
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.accounts.models import User
@@ -24,8 +27,11 @@ class DashboardTests(TestCase):
         resp = self.client.get(reverse("admin:index"))
         self.assertEqual(resp.status_code, 200)
         for text in ("Панель зв'язкового", "Нові заявки", "Потребує уваги", "Швидкі дії", "Останні заявки",
-                     "Підтверджені угоди", "core/admin.css", "core/logo.svg", "core/admin.js"):
+                     "Підтверджені угоди"):
             self.assertContains(resp, text)
+        # у бойовому режимі імена файлів мають хеш (admin.<хеш>.css)
+        for asset in (r"core/admin(\.[0-9a-f]+)?\.css", r"core/logo(\.[0-9a-f]+)?\.svg", r"core/admin(\.[0-9a-f]+)?\.js"):
+            self.assertRegex(resp.content.decode(), asset)
         # Заявка з'являється в таблиці останніх із посиланням на картку
         self.assertContains(resp, reverse("admin:orders_order_change", args=[self.order.pk]))
         self.assertContains(resp, "Діагностика ходової")
@@ -81,7 +87,7 @@ class DashboardTests(TestCase):
         self.client.logout()
         self.assertRedirects(self.client.get(reverse("admin:index")), f"{reverse('admin:login')}?next=/admin/")
         login = self.client.get(reverse("admin:login"))
-        self.assertContains(login, "core/admin.css")
+        self.assertRegex(login.content.decode(), r"core/admin(\.[0-9a-f]+)?\.css")
         self.assertContains(login, "виконавці, заявки та відгуки")
 
     def test_login_from_the_login_page_lands_in_the_panel(self):
@@ -112,3 +118,47 @@ class DashboardTests(TestCase):
         nav = html[html.index('id="jazzy-navigation"'):]
         self.assertLess(nav.index("Заявки"), nav.index("Каталог"))
         self.assertNotContains(resp, "/admin/auth/group/")
+
+
+class ProductionStaticFilesTests(TestCase):
+    """Адмінка з хешованою статикою (DJANGO_DEBUG=0 на сервері).
+
+    Регресія: Jazzmin вставляє {% static 'vendor/bootswatch' %} (каталог), і ManifestStaticFilesStorage кидав
+    «Missing staticfiles manifest entry»: вхід на сторінку входу працював, а вся панель після входу відповідала 500.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.static_root = tempfile.mkdtemp()
+        cls._override = override_settings(
+            STATIC_ROOT=cls.static_root,
+            STORAGES={
+                "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+                "staticfiles": {"BACKEND": "apps.core.storage.TolerantManifestStaticFilesStorage"},
+            },
+        )
+        cls._override.enable()
+        call_command("collectstatic", interactive=False, verbosity=0)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._override.disable()
+        super().tearDownClass()
+
+    def setUp(self):
+        self.w = make_world()
+        self.admin = User.objects.create_superuser("liaison", password="pass12345", role=User.Role.LIAISON)
+        self.client.force_login(self.admin)
+
+    def test_panel_pages_render_with_hashed_static_files(self):
+        provider = self.w["provider"]
+        for url in (reverse("admin:index"), reverse("admin:orders_order_changelist"),
+                    reverse("admin:catalog_provider_change", args=[provider.pk]),
+                    reverse("admin:orders_order_report")):
+            resp = self.client.get(url)
+            self.assertEqual(resp.status_code, 200, url)
+        html = self.client.get(reverse("admin:index")).content.decode()
+        self.assertRegex(html, r"/static/core/admin\.[0-9a-f]{12}\.css")
+        self.client.logout()
+        self.assertEqual(self.client.get(reverse("admin:login")).status_code, 200)

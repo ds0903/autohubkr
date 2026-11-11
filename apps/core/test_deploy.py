@@ -74,7 +74,7 @@ class ProductionSettingsTests(SimpleTestCase):
     def test_production_uses_hashed_static_files(self):
         code, out = load_settings()
         self.assertEqual(code, 0, out)
-        self.assertEqual(out["static"], "django.contrib.staticfiles.storage.ManifestStaticFilesStorage")
+        self.assertEqual(out["static"], "apps.core.storage.TolerantManifestStaticFilesStorage")
 
     def test_http_deployment_keeps_cookies_usable(self):
         """Без https (доступ за IP) Secure-cookie зламали б вхід: браузер не надсилає їх по http."""
@@ -114,6 +114,29 @@ def parse_env(text: str) -> dict[str, str]:
             key, value = line.split("=", 1)
             result[key] = value
     return result
+
+
+class TolerantStorageTests(SimpleTestCase):
+    def make(self, tmp):
+        from apps.core.storage import TolerantManifestStaticFilesStorage
+
+        return TolerantManifestStaticFilesStorage(location=tmp, base_url="/static/")
+
+    def test_directory_paths_are_returned_as_is(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "vendor" / "bootswatch").mkdir(parents=True)
+            storage = self.make(tmp)
+            self.assertEqual(storage.url("vendor/bootswatch"), "/static/vendor/bootswatch")
+            self.assertEqual(storage.url("vendor/nowhere"), "/static/vendor/nowhere")
+
+    def test_files_stay_strict(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(ValueError):
+                self.make(tmp).url("missing/file.css")
 
 
 class DeployFilesTests(SimpleTestCase):
