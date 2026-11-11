@@ -1,0 +1,14 @@
+<article class="provider" data-reveal>
+  <h3><a href="{% url 'web:provider' provider.pk %}">{{ provider.name }}</a></h3>
+  {% if provider.rating %}<span class="score" title="Рейтинг за модерованими відгуками">★ {{ provider.rating }}</span>{% endif %}
+  <p class="meta">
+    {% for c in provider.categories.all %}{{ c.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if provider.district %}{% if provider.categories.all %}, {% endif %}{{ provider.district }}{% endif %}
+  </p>
+  <div class="tags">
+    {% if provider.data_status == "verified" %}<span class="badge ok">перевірено платформою</span>
+    {% elif provider.data_status == "owner_confirmed" %}<span class="badge accent">підтверджено власником</span>
+    {% else %}<span class="badge">дані зібрано з відкритих джерел</span>{% endif %}
+    {% if provider.is_promoted %}<span class="badge warn">реклама</span>{% endif %}
+    {% if provider.confirmed_deals_count %}<span class="badge">підтверджених робіт: {{ provider.confirmed_deals_count }}</span>{% endif %}
+  </div>
+</article>

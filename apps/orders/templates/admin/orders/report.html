@@ -1,0 +1,27 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div id="content-main">
+  <h2>Ключові показники</h2>
+  <table>
+    <tr><th>Усього заявок</th><td>{{ metrics.total_orders }}</td></tr>
+    <tr><th>Підтверджених угод (головна метрика)</th><td>{{ metrics.confirmed_deals }}</td></tr>
+    <tr><th>Конверсія заявка → підтверджена робота</th><td>{{ metrics.conversion_percent }}%</td></tr>
+    <tr><th>Запитів виконавцям / відповідей</th><td>{{ metrics.offers_total }} / {{ metrics.offers_responded }}</td></tr>
+    <tr><th>Середній час відповіді виконавця</th><td>{% if metrics.avg_response_minutes is not None %}{{ metrics.avg_response_minutes }} хв{% else %}—{% endif %}</td></tr>
+  </table>
+
+  <h2>Заявки за статусами</h2>
+  <table>
+    {% for label, count in status_rows %}
+      <tr><th>{{ label }}</th><td>{{ count }}</td></tr>
+    {% empty %}<tr><td>Даних ще немає</td></tr>{% endfor %}
+  </table>
+
+  <h2>Причини спроб обходу платформи</h2>
+  <table>
+    {% for label, count in reason_rows %}
+      <tr><th>{{ label }}</th><td>{{ count }}</td></tr>
+    {% empty %}<tr><td>Випадків не зафіксовано</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

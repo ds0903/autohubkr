@@ -1,0 +1,11 @@
+{% extends "web/base.html" %}
+{% block title %}Вхід · АвтоХаб КР{% endblock %}
+{% block content %}
+<h1>Вхід</h1>
+<form method="post" class="card" style="max-width:420px">
+  {% csrf_token %}{{ form.as_p }}
+  <input type="hidden" name="next" value="{{ next }}">
+  <button class="btn" type="submit">Увійти</button>
+  <p class="muted small" style="margin-bottom:0">Немає акаунта? <a href="{% url 'web:register' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Зареєструйтесь</a></p>
+</form>
+{% endblock %}

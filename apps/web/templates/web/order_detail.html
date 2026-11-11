@@ -1,0 +1,114 @@
+{% extends "web/base.html" %}
+{% block title %}Заявка №{{ order.pk }} · АвтоХаб КР{% endblock %}
+{% block content %}
+<div class="row between">
+  <h1>Заявка №{{ order.pk }}</h1>
+  <span class="badge accent" style="font-size:15px">{{ order.get_status_display }}</span>
+</div>
+
+<div class="card">
+  <p style="margin-top:0">{{ order.description|linebreaksbr }}</p>
+  <p class="muted small" style="margin-bottom:0">
+    {{ order.created_at|date:"d.m.Y H:i" }}
+    {% if order.vehicle %} · {{ order.vehicle.display_name }}{% endif %}
+    {% if order.service_type %} · {{ order.service_type.name }}{% endif %}
+    {% if order.preferred_time %} · бажано: {{ order.preferred_time }}{% endif %}
+  </p>
+</div>
+
+{% if order.provider and order.contacts_visible %}
+<h2>Ваш виконавець</h2>
+<div class="card">
+  <strong><a href="{% url 'web:provider' order.provider.pk %}">{{ order.provider.name }}</a></strong>
+  <p class="muted" style="margin:4px 0">{{ order.provider.address }}</p>
+  {% if order.provider.phone %}<p style="margin:4px 0">Телефон: <strong>{{ order.provider.phone }}</strong></p>{% endif %}
+  {% if order.provider.telegram_username %}<p style="margin:4px 0">Telegram: {{ order.provider.telegram_username }}</p>{% endif %}
+  {% if order.scheduled_at %}<p style="margin:4px 0">Візит: <strong>{{ order.scheduled_at|date:"d.m.Y H:i" }}</strong></p>{% endif %}
+  {% if order.price_min or order.price_max %}<p style="margin:4px 0">Узгоджена вилка: {{ order.price_min|default_if_none:"…"|floatformat:0 }}–{{ order.price_max|default_if_none:"…"|floatformat:0 }} грн{% if order.term_note %}, строк: {{ order.term_note }}{% endif %}</p>{% endif %}
+  {% if order.status == S.BOOKED %}
+    <p class="muted small" style="margin:10px 0 2px">Покажіть цей код виконавцю при візиті:</p>
+    <div class="visit-code">{{ order.visit_code }}</div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if order.status == S.NEW or order.status == S.OFFERED %}
+<h2>Пропозиції виконавців</h2>
+  {% if offers %}
+    {% for offer in offers %}
+    <div class="card" style="margin-bottom:10px">
+      <div class="row between">
+        <strong><a href="{% url 'web:provider' offer.provider.pk %}">{{ offer.provider.name }}</a></strong>
+        {% if offer.status == "declined" %}<span class="badge danger">відмовився</span>{% endif %}
+      </div>
+      {% if offer.status == "proposed" %}
+        <p style="margin:6px 0">Вартість: <strong>{{ offer.price_min|default_if_none:"…"|floatformat:0 }}–{{ offer.price_max|default_if_none:"…"|floatformat:0 }} грн</strong>
+          {% if offer.term_note %} · строк: {{ offer.term_note }}{% endif %}
+          {% if offer.suggested_time %} · час: {{ offer.suggested_time }}{% endif %}</p>
+        {% if offer.comment %}<p class="muted small">{{ offer.comment }}</p>{% endif %}
+        <form method="post" action="{% url 'web:order_action' order.pk %}" class="row">
+          {% csrf_token %}<input type="hidden" name="action" value="book"><input type="hidden" name="offer" value="{{ offer.pk }}">
+          <input type="datetime-local" name="scheduled_at" aria-label="Дата і час візиту" style="max-width:240px">
+          <button class="btn small" type="submit">Записатись</button>
+        </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% endif %}
+  {% if pending_offers %}<p class="muted">Очікуємо відповідь виконавців: {{ pending_offers }}. Зв'язковий слідкує за швидкістю відповіді.</p>
+  {% elif not offers %}<p class="muted">Зв'язковий підбирає виконавців і незабаром додасть пропозиції.</p>{% endif %}
+{% endif %}
+
+{% if order.status == S.VISITED and order.estimate_amount %}
+<h2>Кошторис</h2>
+<div class="card">
+  <p style="margin-top:0">{{ order.estimate_text|linebreaksbr }}</p>
+  <p><strong>Сума: {{ order.estimate_amount|floatformat:2 }} грн</strong></p>
+  <form method="post" action="{% url 'web:order_action' order.pk %}">{% csrf_token %}
+    <input type="hidden" name="action" value="approve_estimate"><button class="btn" type="submit">Погоджую кошторис</button></form>
+</div>
+{% elif order.estimate_amount and order.status != S.VISITED %}
+<h2>Кошторис</h2>
+<div class="card"><p style="margin-top:0">{{ order.estimate_text|linebreaksbr }}</p><p style="margin-bottom:0"><strong>{{ order.estimate_amount|floatformat:2 }} грн</strong></p></div>
+{% endif %}
+
+{% if order.status == S.ESTIMATE %}
+<h2>Підтвердження виконання</h2>
+<div class="card">
+  <p style="margin-top:0">Виконавець: {% if order.provider_confirmed_at %}<span class="badge ok">підтвердив</span>{% else %}<span class="badge">ще ні</span>{% endif %}
+     · Ви: {% if order.client_confirmed_at %}<span class="badge ok">підтвердили</span>{% else %}<span class="badge">ще ні</span>{% endif %}</p>
+  {% if not order.client_confirmed_at %}
+  <form method="post" action="{% url 'web:order_action' order.pk %}">{% csrf_token %}
+    <input type="hidden" name="action" value="confirm_work"><button class="btn" type="submit">Підтверджую: роботу виконано</button></form>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if order.status == S.DONE or order.status == S.REVIEWED %}
+<h2>Робота виконана</h2>
+<div class="card">
+  <p style="margin-top:0">Угода підтверджена обома сторонами{% if order.final_amount %}, сума: <strong>{{ order.final_amount|floatformat:2 }} грн</strong>{% endif %}{% if order.warranty_days %}, гарантія: {{ order.warranty_days }} дн{% endif %}.
+  {% if order.vehicle %}Запис додано в гараж «{{ order.vehicle.display_name }}» з позначкою «підтверджено виконавцем».{% endif %}</p>
+  {% if review %}
+    <p class="muted" style="margin-bottom:0">Ваш відгук: ★ {{ review.rating }} ({{ review.get_status_display }}).</p>
+  {% else %}
+    <form method="post" action="{% url 'web:order_action' order.pk %}">{% csrf_token %}
+      <input type="hidden" name="action" value="review">{{ review_form.as_p }}
+      <button class="btn" type="submit">Залишити відгук</button></form>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if order.status != S.CANCELLED and order.status != S.DONE and order.status != S.REVIEWED %}
+<form method="post" action="{% url 'web:order_action' order.pk %}" style="margin-top:20px">{% csrf_token %}
+  <input type="hidden" name="action" value="cancel"><button class="btn secondary small" type="submit">Скасувати заявку</button></form>
+{% endif %}
+
+<h2>Історія заявки</h2>
+<ul class="timeline">
+  {% for e in log %}
+    <li><strong>{{ e.created_at|date:"d.m.Y H:i" }}</strong> · {{ e.to_status_display }}{% if e.note %}<span class="muted">: {{ e.note }}</span>{% endif %}
+      {% if e.changed_by %}<span class="muted small"> ({{ e.changed_by.first_name|default:e.changed_by.username }})</span>{% endif %}</li>
+  {% endfor %}
+</ul>
+{% endblock %}

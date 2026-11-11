@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Secrets / local config
+.env
+.pgdata*
+
+# Django
+db.sqlite3
+/media/
+/staticfiles/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Знімки браузера з ручних перевірок
+.playwright-mcp/
+.coverage
+htmlcov/

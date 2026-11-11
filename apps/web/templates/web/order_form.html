@@ -1,0 +1,13 @@
+{% extends "web/base.html" %}
+{% block title %}Нова заявка · АвтоХаб КР{% endblock %}
+{% block content %}
+<h1>Нова заявка</h1>
+{% if provider %}<p class="lead">Виконавець: <strong>{{ provider.name }}</strong>. Він отримає запит і запропонує ціну та час. Якщо не відповість, зв'язковий підбере інший варіант.</p>
+{% else %}<p class="lead">Зв'язковий підбере 2–3 виконавців, узгодить ціну й час та повідомить вас.</p>{% endif %}
+<form method="post" enctype="multipart/form-data" class="card" style="max-width:640px">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <p class="muted small">Контакти виконавця відкриються після підтвердження запису.</p>
+  <button class="btn" type="submit">Надіслати заявку</button>
+</form>
+{% endblock %}

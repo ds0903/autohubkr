@@ -1,0 +1,19 @@
+{% extends "web/base.html" %}
+{% block title %}Підтвердження даних · АвтоХаб КР{% endblock %}
+{% block content %}
+{% if expired %}
+  <h1>Посилання застаріло</h1>
+  <p class="lead">Попросіть зв'язковий платформи надіслати нове посилання для підтвердження даних.</p>
+{% elif done %}
+  <h1>Дякуємо!</h1>
+  <p class="lead">Дані «{{ provider.name }}» підтверджено власником. Тепер на картці є позначка «підтверджено власником».</p>
+  <p><a class="btn" href="{% url 'web:provider' provider.pk %}">Переглянути картку</a></p>
+{% else %}
+  <h1>Підтвердіть дані: {{ provider.name }}</h1>
+  <p class="lead">Ми зібрали ці дані з відкритих джерел. Перевірте їх, виправте за потреби й підтвердіть.</p>
+  <form method="post" class="card" style="max-width:640px">
+    {% csrf_token %}{{ form.as_p }}
+    <button class="btn" type="submit">Усе вірно, підтверджую</button>
+  </form>
+{% endif %}
+{% endblock %}

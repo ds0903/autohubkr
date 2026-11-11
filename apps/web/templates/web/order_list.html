@@ -1,0 +1,17 @@
+{% extends "web/base.html" %}
+{% block title %}Мої заявки · АвтоХаб КР{% endblock %}
+{% block content %}
+<div class="row between"><h1>Мої заявки</h1><a class="btn" href="{% url 'web:order_new' %}">Нова заявка</a></div>
+{% for o in orders %}
+  <a class="card" style="display:block;margin-bottom:10px;color:inherit" href="{% url 'web:order_detail' o.pk %}">
+    <div class="row between">
+      <strong>№{{ o.pk }} · {{ o.service_type|default:"Заявка" }}</strong>
+      <span class="badge accent">{{ o.get_status_display }}</span>
+    </div>
+    <p class="muted small" style="margin:4px 0 0">{{ o.created_at|date:"d.m.Y H:i" }}{% if o.provider %} · {{ o.provider.name }}{% endif %}</p>
+    <p style="margin:6px 0 0">{{ o.description|truncatechars:140 }}</p>
+  </a>
+{% empty %}
+  <div class="card"><p>Заявок поки немає. <a href="{% url 'web:home' %}">Опишіть проблему</a> або <a href="{% url 'web:order_new' %}">залиште заявку</a>.</p></div>
+{% endfor %}
+{% endblock %}

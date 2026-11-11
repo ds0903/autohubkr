@@ -1,0 +1,27 @@
+{% extends "web/base.html" %}
+{% block title %}Каталог виконавців · АвтоХаб КР{% endblock %}
+{% block content %}
+<h1>Каталог виконавців</h1>
+<form method="get" class="card" style="margin-bottom:18px">
+  <div class="grid cols-3">
+    <div><label for="q">Пошук</label><input id="q" type="search" name="q" value="{{ selected.q }}" placeholder="назва, район, послуга"></div>
+    <div><label for="category">Категорія</label>
+      <select id="category" name="category"><option value="">Усі</option>
+        {% for c in categories %}<option value="{{ c.slug }}" {% if selected.category == c.slug %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select></div>
+    <div><label for="brand">Марка авто</label>
+      <select id="brand" name="brand"><option value="">Будь-яка</option>
+        {% for b in brands %}<option value="{{ b.slug }}" {% if selected.brand == b.slug %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+      </select></div>
+  </div>
+  <p style="margin:14px 0 0"><button class="btn" type="submit">Показати</button></p>
+</form>
+
+{% if providers %}
+  <div class="provider-list">
+    {% for provider in providers %}{% include "web/partials/provider_card.html" %}{% endfor %}
+  </div>
+{% else %}
+  <div class="card"><p>Нічого не знайдено за цими умовами. <a href="{% url 'web:order_new' %}">Залиште заявку</a>, і зв'язковий підбере виконавця вручну.</p></div>
+{% endif %}
+{% endblock %}

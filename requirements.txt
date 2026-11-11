@@ -1,0 +1,7 @@
+Django>=5.2,<6
+psycopg[binary]>=3.2
+python-dotenv>=1.0
+google-genai>=1.0
+aiogram>=3.13
+pillow>=10.0
+segno>=1.6

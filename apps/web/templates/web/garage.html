@@ -1,0 +1,26 @@
+{% extends "web/base.html" %}
+{% block title %}Мій гараж · АвтоХаб КР{% endblock %}
+{% block content %}
+<h1>Мій гараж</h1>
+<p class="lead">Історія робіт, витрати й план обслуговування для кожного авто. Держномер не збираємо.</p>
+
+<div class="grid cols-2">
+  {% for v in vehicles %}
+    <a class="card" href="{% url 'web:vehicle' v.pk %}" style="color:inherit">
+      <h3>{{ v.display_name }}</h3>
+      <p class="muted small" style="margin:0">{% if v.vin %}VIN {{ v.vin }}{% else %}VIN не вказано{% endif %}{% if v.mileage %} · {{ v.mileage }} км{% endif %}</p>
+    </a>
+  {% empty %}
+    <div class="card"><p style="margin:0">Ще немає жодного авто. Додайте перше нижче.</p></div>
+  {% endfor %}
+</div>
+
+<h2>Додати авто</h2>
+<form method="post" class="card" style="max-width:640px">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <p class="muted small">Марку й модель вписуйте як звикли. Якщо вкажете VIN, ми спробуємо визначити марку й рік самі.</p>
+  <button class="btn" type="submit">Додати в гараж</button>
+</form>
+<datalist id="brand-list">{% for b in brands %}<option value="{{ b.name }}">{% endfor %}</datalist>
+{% endblock %}

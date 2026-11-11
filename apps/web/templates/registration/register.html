@@ -1,0 +1,11 @@
+{% extends "web/base.html" %}
+{% block title %}Реєстрація · АвтоХаб КР{% endblock %}
+{% block content %}
+<h1>Реєстрація</h1>
+<form method="post" class="card" style="max-width:520px">
+  {% csrf_token %}{{ form.as_p }}
+  {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+  <button class="btn" type="submit">Створити акаунт</button>
+  <p class="muted small" style="margin-bottom:0">Вже є акаунт? <a href="{% url 'web:login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Увійти</a> · <a href="{% url 'web:privacy' %}">Політика конфіденційності</a></p>
+</form>
+{% endblock %}

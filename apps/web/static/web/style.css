@@ -1,0 +1,349 @@
+/*
+  АвтоХаб КР: візуальна мова взята з дороги й автосервісу.
+  Синій інформаційний знак (так позначають населені пункти й послуги), сигнальний жовтий, бетонний фон,
+  шрифти табличок (Fira Sans Condensed). Анкета звернення розлінована, як бланк заказ-наряду.
+*/
+:root {
+  --paper: #eef1f3;
+  --sheet: #ffffff;
+  --sheet-2: #e3e8ec;
+  --ink: #121c26;
+  --muted: #56636f;
+  --line: #c6cfd6;
+  --road: #0b4a8f;
+  --road-ink: #ffffff;
+  --link: #0b4a8f;
+  --signal: #ffc800;
+  --signal-ink: #1a1500;
+  --ok: #1b7a43;
+  --warn: #8f5400;
+  --danger: #b3261e;
+  --danger-soft: #fdecea;
+  --focus: #0b4a8f;
+  --radius: 4px;
+  --display: "Fira Sans Condensed", "Bahnschrift", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --text: "Fira Sans", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f151b; --sheet: #172029; --sheet-2: #212c37; --ink: #e8edf1; --muted: #98a6b2; --line: #2f3c49;
+    --road: #2a73c9; --link: #7db8ff; --signal: #ffcf33; --ok: #5fcf8a; --warn: #ffb54d;
+    --danger: #ff8a80; --danger-soft: #35201f; --focus: #7db8ff;
+  }
+}
+* { box-sizing: border-box; }
+/* color-scheme: системні елементи (скрол, поля, автозаповнення) одразу темні в темній темі, без білого спалаху;
+   scrollbar-gutter: сторінка не смикається вбік, коли зникає смуга прокрутки */
+html {
+  -webkit-text-size-adjust: 100%; color-scheme: light dark; background: var(--paper);
+  scroll-behavior: smooth; scrollbar-gutter: stable;
+}
+:root[data-theme="light"] { color-scheme: light; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font: 17px/1.55 var(--text);
+}
+a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 2px; }
+/* картка-посилання (гараж): підкреслюється лише назва при наведенні, не весь текст */
+a.card { text-decoration: none; }
+a.card:hover h3 { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+a.card:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+
+/* ---------- Шапка: синя табличка з назвою міста ---------- */
+header.top { background: var(--road); color: var(--road-ink); border-bottom: 4px solid var(--signal); }
+header.top .wrap { display: flex; align-items: center; gap: 16px; min-height: 64px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; }
+.logo { display: flex; flex-direction: column; line-height: 1.05; color: var(--road-ink); text-decoration: none; }
+.logo:hover { text-decoration: none; }
+.logo b { font: 700 26px/1 var(--display); letter-spacing: .01em; }
+.logo small { font: 500 13px/1.2 var(--text); opacity: .85; margin-top: 3px; }
+nav.main { display: flex; gap: 2px; flex-wrap: wrap; margin-left: auto; align-items: center; }
+nav.main a, nav.main button.linklike {
+  color: var(--road-ink); padding: 8px 12px; font: 500 16px/1.2 var(--text); background: none; border: 0; cursor: pointer;
+  text-decoration: none; border-radius: var(--radius);
+}
+nav.main a:hover, nav.main button.linklike:hover { background: rgba(255, 255, 255, .14); }
+nav.main a.btn, nav.main a.btn:hover { background: var(--signal); color: var(--signal-ink); margin-left: 6px; }
+header.top :focus-visible { outline-color: var(--signal); }
+
+main { padding: 32px 0 64px; min-height: 60vh; }
+
+/* ---------- Типографіка ---------- */
+h1, h2, h3 { font-family: var(--display); font-weight: 700; color: var(--ink); }
+h1 { font-size: clamp(34px, 6vw, 54px); line-height: 1.02; margin: 0 0 12px; max-width: 18ch; }
+h2 { font-size: 28px; line-height: 1.15; margin: 44px 0 14px; }
+h3 { font-size: 21px; line-height: 1.2; font-weight: 600; margin: 0 0 6px; }
+.lead { color: var(--muted); font-size: 19px; max-width: 56ch; margin: 0 0 8px; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+
+/* ---------- Аркуш (замість картки з тінню) ---------- */
+.card { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
+.grid { display: grid; gap: 14px; }
+.grid.cols-2 { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.grid.cols-3 { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.row.between { justify-content: space-between; }
+
+/* ---------- Позначки ---------- */
+.badge { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 13px; font-weight: 500; line-height: 1.5;
+  background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.badge.ok { border-color: var(--ok); color: var(--ok); }
+.badge.accent { border-color: var(--link); color: var(--link); }
+.badge.warn { background: var(--signal); border-color: var(--signal); color: var(--signal-ink); font-weight: 600; }
+.badge.danger { border-color: var(--danger); color: var(--danger); }
+
+/* Табличка послуги: синій знак із білою внутрішньою рамкою */
+.sign {
+  display: inline-block; background: var(--road); color: var(--road-ink); border-radius: 6px; padding: 6px 14px;
+  font: 600 18px/1.25 var(--display); text-decoration: none;
+  box-shadow: inset 0 0 0 2px var(--road), inset 0 0 0 3.5px rgba(255, 255, 255, .92);
+}
+a.sign:hover { text-decoration: none; filter: brightness(1.15); }
+.signs { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* ---------- Кнопки ---------- */
+.btn, button.btn {
+  display: inline-block; background: var(--road); color: var(--road-ink); border: 0; padding: 11px 22px; border-radius: var(--radius);
+  font: 600 18px/1.2 var(--display); cursor: pointer; text-align: center; text-decoration: none;
+}
+.btn:hover { filter: brightness(1.18); text-decoration: none; }
+.btn.secondary { background: transparent; color: var(--link); box-shadow: inset 0 0 0 1.5px var(--link); }
+.btn.secondary:hover { background: var(--sheet-2); filter: none; }
+.btn.small { padding: 7px 14px; font-size: 16px; }
+.btn.danger { background: var(--danger); color: #fff; }
+.btn[disabled] { opacity: .6; cursor: progress; }
+
+/* ---------- Форми ---------- */
+form p { margin: 0 0 14px; }
+label { display: block; font-weight: 500; font-size: 15px; margin-bottom: 4px; color: var(--ink); }
+input[type=text], input[type=password], input[type=number], input[type=date], input[type=datetime-local], input[type=search], select, textarea {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 3px; background: var(--sheet);
+  color: var(--ink); font: inherit;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; border-color: var(--focus); }
+.helptext, .errorlist { font-size: 13px; color: var(--muted); margin: 4px 0 0; padding: 0; list-style: none; }
+.errorlist { color: var(--danger); }
+/* Правила пароля: <ul> від Django браузер виштовхує з-під <p>.helptext, тому стилізуємо його як сусідній елемент форми;
+   правила течуть суцільним дрібним текстом, а не довгим списком з маркерами */
+form > ul:not(.errorlist) { margin: -8px 0 14px; padding: 0; list-style: none; font-size: 13px; line-height: 1.4; color: var(--muted); }
+form > ul:not(.errorlist) li { display: inline; }
+form > ul:not(.errorlist) li + li::before { content: " "; }
+/* Галочка ліворуч від підпису в один рядок (у Django підпис іде перед полем) */
+form p:has(> input[type=checkbox]) { display: flex; flex-direction: row-reverse; justify-content: flex-end; align-items: flex-start; gap: 10px; }
+form p:has(> input[type=checkbox]) label { margin: 0; flex: 1; font-weight: 400; }
+form p:has(> input[type=checkbox]) input { flex: none; width: 20px; height: 20px; margin: 2px 0 0; }
+
+/* Бланк звернення: розлінований, як заказ-наряд */
+.intake {
+  background: var(--sheet); border: 1px solid var(--line); border-top: 6px solid var(--road); border-radius: var(--radius);
+  padding: 20px 20px 22px; margin-top: 22px; max-width: 760px; display: grid; gap: 14px;
+}
+.intake label { color: var(--muted); font-size: 14px; }
+.intake textarea {
+  min-height: 128px; padding: 4px 2px 0; border: 0; border-radius: 0; background-color: transparent;
+  font-size: 19px; line-height: 32px; resize: vertical;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--line) 31px 32px);
+  background-attachment: local;
+}
+.intake textarea:focus { outline: none; border: 0; box-shadow: none; }
+.intake .car { display: grid; gap: 2px; }
+.intake .car input { border: 0; border-bottom: 1.5px solid var(--ink); border-radius: 0; padding-left: 2px; background: transparent; font-size: 18px; }
+.intake .car input:focus { outline: none; border-bottom-color: var(--focus); box-shadow: 0 2px 0 var(--focus); }
+.wait { color: var(--muted); }
+code.code { display: block; padding: 8px 10px; background: var(--sheet-2); border-radius: var(--radius); word-break: break-all; user-select: all; }
+details > summary { cursor: pointer; padding: 4px 0; }
+
+/* ---------- Повідомлення ---------- */
+.alert { padding: 12px 16px; border-radius: var(--radius); margin-bottom: 12px; border: 1px solid var(--line); background: var(--sheet); }
+.alert.success { border-color: var(--ok); }
+.alert.error { border-color: var(--danger); background: var(--danger-soft); }
+/* Небезпека: сигнальна смуга як на дорожніх роботах */
+.alert.danger-box { position: relative; border-color: var(--danger); background: var(--danger-soft); color: var(--ink); font-weight: 600; padding-left: 28px; }
+.alert.danger-box::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 12px;
+  background: repeating-linear-gradient(-45deg, var(--signal) 0 7px, #1a1a1a 7px 14px);
+  border-radius: 3px 0 0 3px;
+}
+
+/* ---------- Відповідь помічника ---------- */
+.slip { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--radius); margin-top: 22px; max-width: 760px; padding: 6px 20px 18px; }
+.slip section { padding: 16px 0; border-top: 1px solid var(--line); }
+.slip section:first-child { border-top: 0; }
+.slip h3 { font-size: 20px; margin-bottom: 8px; }
+.slip ul { margin: 0; padding: 0; list-style: none; }
+.slip li { padding-left: 18px; position: relative; margin: 4px 0; }
+.slip li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 7px; height: 7px; background: var(--road); }
+.slip .fineprint { color: var(--muted); font-size: 14px; padding-top: 14px; border-top: 1px solid var(--line); margin: 0; }
+
+/* Шапка сторінки виконавця: кнопка «Залишити заявку» не липне до значків під нею */
+.provider-head { margin-bottom: 26px; row-gap: 18px; }
+.provider-head h1 { margin-bottom: 8px; }
+.provider-head .muted { margin: 0; }
+
+/* ---------- Список виконавців ---------- */
+.provider-list { display: grid; border-top: 2px solid var(--ink); }
+.provider { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 14px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.provider h3 { margin: 0; font-size: 22px; }
+.provider h3 a { color: var(--ink); text-decoration: none; }
+.provider h3 a:hover { color: var(--link); text-decoration: underline; }
+.provider .meta { grid-column: 1; margin: 0; color: var(--muted); font-size: 15px; }
+.provider .tags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.provider .score { grid-row: 1; grid-column: 2; font: 700 22px/1.2 var(--display); color: var(--ok); font-variant-numeric: tabular-nums; }
+
+/* Виконавець у відповіді: назва, умови й ціна одним рядком-позицією, як у прайсі */
+.pick { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 12px 0; border-top: 1px dashed var(--line); align-items: start; }
+.pick:first-of-type { border-top: 0; }
+.pick strong { font: 600 20px/1.2 var(--display); }
+.pick .why { grid-column: 1; margin: 0; color: var(--muted); font-size: 15px; }
+.pick .price { grid-column: 1; margin: 0; font-size: 15px; }
+.pick .go { grid-row: 1 / span 3; grid-column: 2; align-self: center; }
+
+/* ---------- Як це працює: це справді послідовність ---------- */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; grid-template-columns: repeat(4, 1fr); }
+.steps li { border-top: 4px solid var(--road); padding-top: 10px; }
+.steps b { display: block; font: 700 40px/1 var(--display); color: var(--link); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.steps h3 { margin-bottom: 4px; }
+.steps p { margin: 0; color: var(--muted); font-size: 16px; }
+@media (max-width: 900px) { .steps { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .steps { grid-template-columns: 1fr; } }
+
+/* ---------- Таблиці й журнали ---------- */
+table.t { width: 100%; border-collapse: collapse; }
+table.t th, table.t td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.t th { font-size: 13px; color: var(--muted); font-weight: 600; }
+.timeline { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--line); }
+.timeline li { padding: 0 0 12px 16px; position: relative; }
+.timeline li::before { content: ""; position: absolute; left: -6px; top: 7px; width: 10px; height: 10px; background: var(--road); }
+.photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.photos img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 3px; }
+.visit-code { font: 700 40px/1.1 var(--display); letter-spacing: .12em; font-variant-numeric: tabular-nums; }
+
+footer { border-top: 1px solid var(--line); padding: 22px 0 44px; color: var(--muted); font-size: 14px; }
+
+@media (max-width: 560px) {
+  main { padding-top: 22px; }
+  nav.main { margin-left: -12px; width: 100%; }
+  .intake, .slip { margin-left: -4px; margin-right: -4px; }
+  .pick { grid-template-columns: 1fr; }
+  .pick .go { grid-row: auto; grid-column: 1; justify-self: start; margin-top: 6px; }
+}
+
+/* Таблиці на вузьких екранах гортаються всередині аркуша, а не розтягують сторінку */
+@media (max-width: 640px) {
+  table.t { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .card { min-width: 0; }
+
+  /* План ТО: кожен пункт окремим рядком замість широкої таблиці */
+  table.plan, table.plan tbody, table.plan tr, table.plan td { display: block; width: 100%; overflow: visible; }
+  table.plan thead { display: none; }
+  table.plan tr { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  table.plan td { border: 0; padding: 2px 0; }
+  table.plan td[data-label]::before { content: attr(data-label) ": "; color: var(--muted); font-size: 13px; }
+  table.plan td:empty { display: none; }
+}
+
+/* ================= Телефон: компактніше (усі сторінки) =================
+   Менші шапка, заголовки, відступи й підказки до полів; поля лишаються 16px, щоб iOS не наближав сторінку при фокусі. */
+@media (max-width: 560px) {
+  body { font-size: 16px; line-height: 1.5; }
+  /* поля сторінки по краях 5px, всередині блоків-рамок 10px */
+  .wrap { padding-left: 5px; padding-right: 5px; }
+  header.top { border-bottom-width: 3px; }
+  header.top .wrap { min-height: 0; padding-top: 6px; padding-bottom: 2px; gap: 0 12px; }
+  .logo { flex-direction: row; align-items: baseline; gap: 8px; }
+  .logo b { font-size: 22px; }
+  .logo small { margin: 0; font-size: 12px; }
+  nav.main { margin-left: -3px; }
+  nav.main a, nav.main button.linklike { padding: 6px; font-size: 15px; }
+  nav.main a.btn { padding: 5px 10px; font-size: 15px; margin-left: 2px; }
+
+  main { padding: 14px 0 36px; }
+  h1 { font-size: 30px; margin-bottom: 8px; }
+  h2 { font-size: 23px; margin: 26px 0 10px; }
+  h3 { font-size: 18px; }
+  .lead { font-size: 16px; }
+  footer { padding: 14px 0 28px; font-size: 13px; }
+
+  .card { padding: 10px; }
+  .alert { padding: 10px; }
+  .alert.danger-box { padding-left: 24px; }
+  form p { margin: 0 0 10px; }
+  label { font-size: 14px; margin-bottom: 2px; }
+  input[type=text], input[type=password], input[type=number], input[type=date], input[type=datetime-local], input[type=search], select, textarea {
+    padding: 8px 5px;
+  }
+  /* підказки до полів: дрібніше, а список правил пароля тече суцільним текстом замість довгих маркерів */
+  .helptext, .errorlist { display: block; font-size: 12.5px; line-height: 1.35; margin-top: 3px; }
+  form > ul:not(.errorlist) { margin: -6px 0 10px; font-size: 12.5px; line-height: 1.35; }
+
+  .intake, .slip { margin-left: 0; margin-right: 0; }
+  .intake { padding: 12px 10px; gap: 10px; margin-top: 14px; }
+  .intake textarea {
+    min-height: 112px; font-size: 17px; line-height: 28px;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 27px, var(--line) 27px 28px);
+  }
+  .intake .car input { font-size: 16px; }
+  .slip { padding: 2px 10px 12px; margin-top: 14px; }
+  .slip section { padding: 12px 0; }
+  .steps { gap: 10px; }
+  .steps li { display: grid; grid-template-columns: 30px 1fr; column-gap: 8px; padding-top: 6px; }
+  .steps b { grid-row: 1 / span 2; font-size: 32px; margin: 0; }
+  .steps h3 { grid-column: 2; margin: 0 0 2px; }
+  .steps p { grid-column: 2; font-size: 15px; }
+  .provider { padding: 10px 0; }
+  .provider h3 { font-size: 19px; }
+  .pick strong { font-size: 18px; }
+  .btn, button.btn { font-size: 17px; padding: 10px 18px; }
+  .visit-code { font-size: 32px; }
+}
+
+/* ================= Рух: спокійні переходи, щоб інтерфейс не різав око ================= */
+:root { --ease: cubic-bezier(.4, 0, .2, 1); --soft: .22s; }
+
+/* Те, що реагує на наведення й фокус, змінюється плавно, а не стрибком */
+a, .btn, .sign, .badge, .card, nav.main a, nav.main button.linklike, input, select, textarea {
+  transition: color var(--soft) var(--ease), background-color var(--soft) var(--ease),
+    border-color var(--soft) var(--ease), box-shadow var(--soft) var(--ease), filter var(--soft) var(--ease),
+    transform var(--soft) var(--ease), text-decoration-color var(--soft) var(--ease);
+}
+.btn:active { transform: translateY(1px); filter: brightness(.96); }
+a.card:hover { border-color: var(--road); }
+input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 4px color-mix(in srgb, var(--focus) 22%, transparent); }
+.intake textarea:focus { box-shadow: none; }
+
+/* Індикатор очікування з'являється й зникає, а не блимає (HTMX ставить .htmx-request на сам індикатор) */
+.htmx-indicator { opacity: 0; transition: opacity .25s var(--ease); }
+.htmx-request.htmx-indicator, .htmx-request .htmx-indicator { opacity: 1; }
+.btn[disabled] { transition: opacity .25s var(--ease); }
+
+/* Відповідь помічника м'яко проявляється там, де зʼявляється, і не виштовхує сторінку різко */
+#ai-result > * { animation: settle .4s var(--ease) both; }
+@keyframes settle { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* Перехід між сторінками: коротке розчинення, шапка стоїть на місці (Chrome/Edge; в інших просто миттєва навігація) */
+@view-transition { navigation: auto; }
+header.top { view-transition-name: site-header; }
+::view-transition-old(root) { animation: .2s var(--ease) both vt-out; }
+::view-transition-new(root) { animation: .3s var(--ease) both vt-in; }
+@keyframes vt-out { to { opacity: 0; } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(6px); } }
+
+/* Поява зі скролом: лише списки (кроки, послуги, виконавці). Клас .js ставить скрипт у <head>,
+   тож без JS усе видно одразу. motion.js після появи знімає data-reveal, і елемент далі живе як звичайний. */
+.js [data-reveal] {
+  opacity: 0; transform: translateY(14px);
+  transition: opacity .55s var(--ease), transform .55s var(--ease); transition-delay: calc(var(--i, 0) * 70ms);
+}
+.js [data-reveal].in { opacity: 1; transform: none; }
+.no-reveal [data-reveal] { opacity: 1 !important; transform: none !important; transition: none !important; }
+@media print { .js [data-reveal] { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; transition-delay: 0s !important; }
+  .js [data-reveal] { opacity: 1; transform: none; }
+  @view-transition { navigation: none; }
+}

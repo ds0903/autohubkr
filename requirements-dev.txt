@@ -1,0 +1,5 @@
+-r requirements.txt
+# E2E-тести (apps/web/test_e2e.py) керують встановленим Google Chrome; завантажувати браузери Playwright не потрібно
+playwright>=1.45
+# звіт про покриття: coverage run manage.py test && coverage report -m
+coverage>=7.4

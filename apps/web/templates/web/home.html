@@ -1,0 +1,46 @@
+{% extends "web/base.html" %}
+{% block content %}
+<section>
+  <h1>Що сталося з авто?</h1>
+  <p class="lead">Опишіть як є, без термінів. Підкажемо, що це може бути, яка послуга потрібна й до кого їхати в Кривому Розі.</p>
+
+  <form class="intake" hx-post="{% url 'web:ask' %}" hx-target="#ai-result" hx-indicator="#ai-wait" hx-disabled-elt="find button">
+    {% csrf_token %}
+    <div>
+      <label for="ai-text">Що відбувається? Наприклад: стукає спереду на ямах, пробіг 120 тис.</label>
+      <textarea id="ai-text" name="text" required minlength="5" maxlength="2000" rows="4"></textarea>
+    </div>
+    <div class="car">
+      <label for="ai-car">Авто, необов'язково</label>
+      <input id="ai-car" name="car" type="text" maxlength="80" autocomplete="off" value="{{ car_default }}"
+             placeholder="Марка, модель, рік: Toyota Camry 2015"{% if vehicles %} list="ai-cars"{% endif %}>
+      {% if vehicles %}<datalist id="ai-cars">{% for v in vehicles %}<option value="{{ v.display_name }}">{% endfor %}</datalist>{% endif %}
+    </div>
+    <div class="row">
+      <button class="btn" type="submit">Дізнатись, що це може бути</button>
+      <span id="ai-wait" class="htmx-indicator wait">Підбираємо…</span>
+    </div>
+  </form>
+  <div id="ai-result" aria-live="polite"></div>
+</section>
+
+<h2>Як це працює</h2>
+<ol class="steps">
+  <li data-reveal><b>1</b><h3>Опишіть</h3><p>Своїми словами. Якщо даних замало, перепитаємо.</p></li>
+  <li data-reveal><b>2</b><h3>Оберіть виконавця</h3><p>Покажемо можливі причини, потрібну послугу й 2–3 виконавців із поясненням, чому саме вони.</p></li>
+  <li data-reveal><b>3</b><h3>Залиште заявку</h3><p>Ціну й строк узгодимо до візиту. Контакти відкриються після запису.</p></li>
+  <li data-reveal><b>4</b><h3>Ведіть гараж</h3><p>Історія робіт, витрати, чеки й нагадування про ТО.</p></li>
+</ol>
+
+<h2>Послуги</h2>
+<div class="signs">
+  {% for c in categories %}<a class="sign" data-reveal href="{% url 'web:catalog' %}?category={{ c.slug }}">{{ c.name }}</a>{% endfor %}
+</div>
+
+{% if top_providers %}
+<h2>Виконавці</h2>
+<div class="provider-list">
+  {% for provider in top_providers %}{% include "web/partials/provider_card.html" %}{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

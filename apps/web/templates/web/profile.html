@@ -1,0 +1,33 @@
+{% extends "web/base.html" %}
+{% block title %}Профіль · АвтоХаб КР{% endblock %}
+{% block content %}
+<h1>Профіль</h1>
+<div class="card" style="max-width:640px">
+  <p style="margin-top:0"><strong>{{ user.first_name|default:user.username }}</strong> · {{ user.get_role_display }}</p>
+  <form method="post">{% csrf_token %}
+    <p><label style="display:flex;gap:8px;align-items:flex-start;font-weight:500">
+      <input type="checkbox" name="ai_consent" {% if user.ai_dialog_consent %}checked{% endif %}>
+      Зберігати мої діалоги з ШІ-помічником для покращення підбору</label></p>
+    <button class="btn small" type="submit">Зберегти</button>
+  </form>
+</div>
+
+{% if tg %}
+<h2>Telegram-бот</h2>
+<div class="card" style="max-width:640px">
+  {% if tg.linked %}
+    <p style="margin-top:0"><span class="badge ok">Telegram підключено</span></p>
+    <p><a class="btn small" href="{{ tg.bot_url }}" target="_blank" rel="noopener">Відкрити бота</a></p>
+  {% else %}
+    <p style="margin-top:0"><a class="btn" href="{{ tg.link_url }}" target="_blank" rel="noopener">Підключити в Telegram</a></p>
+    <details class="small muted">
+      <summary>Не відкривається?</summary>
+      <p>Відкрийте <a href="{{ tg.bot_url }}" target="_blank" rel="noopener">бота</a> і надішліть йому команду
+        (код діє {{ tg.minutes }} хв.):</p>
+      <p><code class="code">/link {{ tg.code }}</code></p>
+    </details>
+  {% endif %}
+  <p class="muted small" style="margin-bottom:0">У боті ви побачите ті самі заявки й гараж, що й на сайті.</p>
+</div>
+{% endif %}
+{% endblock %}

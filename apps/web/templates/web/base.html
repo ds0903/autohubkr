@@ -1,0 +1,51 @@
+{% load static %}<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}АвтоХаб КР: автопослуги в Кривому Розі{% endblock %}</title>
+  <meta name="description" content="{% block description %}Опишіть проблему з авто, дізнайтесь, що це може бути, і залиште заявку перевіреному виконавцю в Кривому Розі.{% endblock %}">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230b4a8f'/%3E%3Crect x='3' y='3' width='26' height='26' rx='3' fill='none' stroke='white' stroke-width='1.5'/%3E%3Ctext x='16' y='23' font-size='19' font-weight='700' text-anchor='middle' fill='white' font-family='Arial,sans-serif'%3EA%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans+Condensed:wght@600;700&family=Fira+Sans:wght@400;500;600&display=swap">
+  <script>document.documentElement.classList.add("js");setTimeout(function(){if(!window.motionReady)document.documentElement.classList.remove("js")},3000)</script>
+  <link rel="stylesheet" href="{% static 'web/style.css' %}">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.12/htmx.min.js" defer></script>
+  <script src="{% static 'web/motion.js' %}" defer></script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="{% url 'web:home' %}" aria-label="АвтоХаб КР, на головну"><b>АвтоХаб</b><small>Кривий Ріг</small></a>
+    <nav class="main" aria-label="Основне меню">
+      <a href="{% url 'web:catalog' %}">Каталог</a>
+      <a href="{% url 'web:garage' %}">Гараж</a>
+      <a href="{% url 'web:orders' %}">Заявки</a>
+      {% if user.is_authenticated %}
+        <a href="{% url 'web:profile' %}">{{ user.first_name|default:user.username }}</a>
+        <form method="post" action="{% url 'web:logout' %}" style="display:inline">{% csrf_token %}
+          <button class="linklike" type="submit">Вийти</button></form>
+      {% else %}
+        <a href="{% url 'web:login' %}">Увійти</a>
+        <a class="btn small" href="{% url 'web:register' %}">Реєстрація</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    {% for message in messages %}
+      <div class="alert {{ message.tags }}" role="status">{{ message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </div>
+</main>
+<footer>
+  <div class="wrap row between">
+    <span>АвтоХаб КР. Автосервіси, мийки, шиномонтаж і евакуатори Кривого Рогу.</span>
+    <a href="{% url 'web:privacy' %}">Політика конфіденційності</a>
+  </div>
+</footer>
+</body>
+</html>

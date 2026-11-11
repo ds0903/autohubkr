@@ -1,0 +1,70 @@
+{% extends "web/base.html" %}
+{% block title %}{{ vehicle.display_name }} · Гараж{% endblock %}
+{% block content %}
+<p><a href="{% url 'web:garage' %}">← До гаража</a></p>
+<h1>{{ vehicle.display_name }}</h1>
+<p class="muted">
+  {% if vehicle.vin %}VIN {{ vehicle.vin }}{% endif %}{% if vehicle.engine %} · {{ vehicle.engine }}{% endif %}
+  {% if vehicle.mileage %} · пробіг {{ vehicle.mileage }} км{% endif %}
+</p>
+
+<h2>План обслуговування</h2>
+<div class="card">
+  <table class="t plan">
+    <thead><tr><th>Робота</th><th>Остання</th><th>Наступна</th><th></th></tr></thead>
+    <tbody>
+    {% for item in plan %}
+      <tr>
+        <td>{{ item.rule.title }}{% if item.note %}<div class="muted small">{{ item.note }}</div>{% endif %}
+            <div class="muted small">{% if item.rule.interval_km %}кожні {{ item.rule.interval_km }} км{% endif %}{% if item.rule.interval_km and item.rule.interval_months %} або {% endif %}{% if item.rule.interval_months %}{{ item.rule.interval_months }} міс.{% endif %}</div></td>
+        <td data-label="Остання">{% if item.last_done_on %}{{ item.last_done_on|date:"d.m.Y" }}{% if item.last_done_km %}<div class="muted small">{{ item.last_done_km }} км</div>{% endif %}{% else %}<span class="muted">немає запису</span>{% endif %}</td>
+        <td data-label="Наступна">{% if item.due_date %}{{ item.due_date|date:"d.m.Y" }}{% endif %}{% if item.due_km %}<div class="muted small">{{ item.due_km }} км</div>{% endif %}</td>
+        <td>{% if item.status == "overdue" %}<span class="badge danger">прострочено</span>
+            {% elif item.status == "soon" %}<span class="badge warn">скоро</span>
+            {% elif item.status == "ok" %}<span class="badge ok">ок</span>
+            {% else %}<span class="badge">додайте запис</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted small" style="margin-bottom:0">{{ plan_disclaimer }}</p>
+</div>
+
+<h2>Витрати за місяцями</h2>
+{% if expenses %}
+<div class="card">
+  <table class="t"><thead><tr><th>Місяць</th><th>Разом, грн</th><th>За типами</th></tr></thead><tbody>
+  {% for m in expenses %}
+    <tr><td>{{ m.month|date:"F Y" }}</td><td><strong>{{ m.total|floatformat:2 }}</strong></td>
+        <td class="muted small">{% for kind, amount in m.by_kind.items %}{{ kind }}: {{ amount|floatformat:0 }}{% if not forloop.last %} · {% endif %}{% endfor %}</td></tr>
+  {% endfor %}</tbody></table>
+</div>
+{% else %}<p class="muted">Витрат ще немає.</p>{% endif %}
+
+<h2>Історія</h2>
+{% for r in records %}
+  <div class="card" style="margin-bottom:10px">
+    <div class="row between">
+      <strong>{{ r.title }}</strong>
+      {% if r.trust == "provider_confirmed" %}<span class="badge ok">підтверджено виконавцем</span>{% else %}<span class="badge">зі слів власника</span>{% endif %}
+    </div>
+    <p class="muted small" style="margin:4px 0 0">{{ r.date|date:"d.m.Y" }} · {{ r.get_kind_display }}{% if r.mileage %} · {{ r.mileage }} км{% endif %}{% if r.amount %} · {{ r.amount|floatformat:2 }} грн{% endif %}{% if r.provider %} · {{ r.provider.name }}{% endif %}</p>
+    {% if r.works %}<p style="margin:6px 0 0">{{ r.works|linebreaksbr }}</p>{% endif %}
+    {% if r.parts %}<p class="muted small" style="margin:4px 0 0">Запчастини: {{ r.parts|linebreaksbr }}</p>{% endif %}
+  </div>
+{% empty %}<p class="muted">Записів ще немає.</p>{% endfor %}
+
+<h2>Розпізнати чек</h2>
+<form method="post" action="{% url 'web:vehicle_receipt_add' vehicle.pk %}" enctype="multipart/form-data" class="card" style="max-width:520px">
+  {% csrf_token %}{{ receipt_form.as_p }}
+  <button class="btn" type="submit">Розпізнати й додати</button>
+  <p class="muted small" style="margin-bottom:0">Помічник перетворить фото на запис: роботи, запчастини, сума, пробіг, дата. Перевірте результат.</p>
+</form>
+{% if receipts %}<p class="muted small">Останні чеки: {% for rc in receipts %}№{{ rc.pk }} — {{ rc.get_status_display }}{% if not forloop.last %}; {% endif %}{% endfor %}</p>{% endif %}
+
+<h2>Додати запис вручну</h2>
+<form method="post" action="{% url 'web:vehicle_record_add' vehicle.pk %}" class="card" style="max-width:640px">
+  {% csrf_token %}{{ record_form.as_p }}
+  <button class="btn" type="submit">Додати запис</button>
+</form>
+{% endblock %}

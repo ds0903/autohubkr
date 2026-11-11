@@ -1,0 +1,57 @@
+{% if error %}
+  <div class="alert error" role="alert" style="max-width:760px;margin-top:22px">{{ error }}</div>
+{% else %}
+<div class="slip">
+  {% if reply.safety_warning %}
+    <section><div class="alert danger-box" role="alert" style="margin:0">{{ reply.safety_warning|cut:"⚠️ " }}</div></section>
+  {% endif %}
+
+  {% if reply.possible_causes %}
+    <section>
+      <h3>Що це може бути <span class="muted small">припущення</span></h3>
+      <ul>{% for c in reply.possible_causes %}<li>{{ c }}</li>{% endfor %}</ul>
+    </section>
+  {% endif %}
+
+  {% if reply.what_to_do or reply.service_type %}
+    <section>
+      {% if reply.what_to_do %}<h3>Що зробити</h3><p style="margin:0 0 12px">{{ reply.what_to_do|linebreaksbr }}</p>{% endif %}
+      {% if reply.service_type %}<p style="margin:0"><span class="muted small">Потрібна послуга</span><br><span class="sign">{{ reply.service_type.name }}</span></p>{% endif %}
+    </section>
+  {% endif %}
+
+  {% if reply.providers %}
+    <section>
+      <h3>До кого звернутись</h3>
+      {% for s in reply.providers %}
+        <div class="pick">
+          <strong><a href="{% url 'web:provider' s.provider.pk %}">{{ s.provider.name }}</a>
+            {% if s.is_ad %}<span class="badge warn">реклама</span>{% endif %}</strong>
+          <p class="why">{{ s.reasons|join:", " }}</p>
+          <p class="price">{{ s.price_text }}</p>
+          <a class="btn small go" href="{% url 'web:order_new' %}?provider={{ s.provider.pk }}{% if reply.service_type %}&service={{ reply.service_type.slug }}{% endif %}&text={{ query|urlencode }}">Залишити заявку</a>
+        </div>
+      {% endfor %}
+    </section>
+  {% elif not reply.needs_details %}
+    <section>
+      <p class="muted" style="margin:0">Підходящих виконавців у базі поки немає. <a href="{% url 'web:order_new' %}?text={{ query|urlencode }}">Залиште заявку</a>, і зв'язковий підбере варіанти вручну.</p>
+    </section>
+  {% endif %}
+
+  {% if reply.questions_for_provider %}
+    <section>
+      <h3>Що спитати в майстра</h3>
+      <ul>{% for q in reply.questions_for_provider %}<li>{{ q }}</li>{% endfor %}</ul>
+    </section>
+  {% endif %}
+  {% if reply.clarifying_questions %}
+    <section>
+      <h3>Щоб відповісти точніше, уточніть</h3>
+      <ul>{% for q in reply.clarifying_questions %}<li>{{ q }}</li>{% endfor %}</ul>
+    </section>
+  {% endif %}
+
+  <p class="fineprint">{{ reply.disclaimer }}</p>
+</div>
+{% endif %}

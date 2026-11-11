@@ -1,0 +1,63 @@
+{% extends "web/base.html" %}
+{% block title %}{{ provider.name }} · АвтоХаб КР{% endblock %}
+{% block content %}
+<div class="row between provider-head">
+  <div>
+    <h1>{{ provider.name }}</h1>
+    <p class="muted">
+      {% for c in provider.categories.all %}{{ c.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+      {% if provider.district %} · {{ provider.district }}{% endif %}
+      {% if provider.address %} · {{ provider.address }}{% endif %}
+    </p>
+  </div>
+  <a class="btn" href="{% url 'web:order_new' %}?provider={{ provider.pk }}">Залишити заявку</a>
+</div>
+
+<div class="row" style="margin-bottom:16px">
+  {% if provider.rating %}<span class="badge ok">★ {{ provider.rating }} · відгуків: {{ provider.reviews_count }}</span>{% endif %}
+  {% if provider.data_status == "verified" %}<span class="badge ok">перевірено платформою</span>
+  {% elif provider.data_status == "owner_confirmed" %}<span class="badge accent">підтверджено власником</span>
+  {% else %}<span class="badge">дані зібрано з відкритих джерел</span>{% endif %}
+  {% if provider.is_promoted %}<span class="badge warn">реклама</span>{% endif %}
+  {% if provider.confirmed_deals_count %}<span class="badge">підтверджених робіт: {{ provider.confirmed_deals_count }}</span>{% endif %}
+  {% if provider.avg_response_minutes is not None %}<span class="badge">{% if provider.avg_response_minutes < 1 %}відповідає за хвилину{% else %}відповідає за ~{{ provider.avg_response_minutes }} хв{% endif %}</span>{% endif %}
+</div>
+
+{% if provider.description %}<p>{{ provider.description|linebreaksbr }}</p>{% endif %}
+{% if provider.working_hours %}<p class="muted">Графік: {{ provider.working_hours }}</p>{% endif %}
+{% if provider.brands.exists %}<p class="muted">Спеціалізація: {{ provider.brands.all|join:", " }}</p>{% endif %}
+
+<div class="card" style="margin:16px 0">
+  <strong>Контакти</strong>
+  <p class="muted" style="margin:6px 0 0">Контакти відкриваються після підтвердження запису: так ми гарантуємо узгоджену ціну, строк і гарантію на роботу.</p>
+</div>
+
+<h2>Послуги й орієнтовні ціни</h2>
+{% if services %}
+<div class="card">
+  <table class="t">
+    <thead><tr><th>Послуга</th><th>Вартість</th></tr></thead>
+    <tbody>
+    {% for s in services %}
+      <tr><td>{{ s.name }}{% if s.price_note %}<div class="muted small">{{ s.price_note }}</div>{% endif %}</td>
+          <td>{% if s.price_min or s.price_max %}{{ s.price_min|default_if_none:"…"|floatformat:0 }}–{{ s.price_max|default_if_none:"…"|floatformat:0 }} грн{% else %}<span class="muted">уточнюйте</span>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted small" style="margin-bottom:0">Ціни орієнтовні; остаточну вартість виконавець узгоджує до візиту.</p>
+</div>
+{% else %}<p class="muted">Прайс ще збирається. Вартість узгоджується при заявці.</p>{% endif %}
+
+{% if photos %}
+<h2>Фото</h2>
+<div class="photos">{% for p in photos %}<img src="{{ p.image.url }}" alt="{{ p.caption|default:p.get_kind_display }}" loading="lazy">{% endfor %}</div>
+{% endif %}
+
+<h2>Відгуки</h2>
+{% for r in reviews %}
+  <div class="card" style="margin-bottom:10px">
+    <div class="row between"><strong>★ {{ r.rating }}</strong><span class="muted small">{{ r.created_at|date:"d.m.Y" }} · за підтвердженою роботою</span></div>
+    {% if r.comment %}<p style="margin:6px 0 0">{{ r.comment }}</p>{% endif %}
+  </div>
+{% empty %}<p class="muted">Відгуків за підтвердженими роботами поки немає.</p>{% endfor %}
+{% endblock %}
